@@ -895,7 +895,27 @@ const compatibilityBank = [
  {title:'If we got matching outfits, I’d pick…',choices:['Comfy pajamas','Funny costumes','Matching colors','Absolutely not']},
  {title:'On a rainy day, I want to…',choices:['Watch shows','Go for a drive','Bake or cook','Stay in bed']},
  {title:'If I won a small prize, I’d…',choices:['Share it','Spend it now','Save it','Buy us a treat']},
- {title:'I’m happiest when a plan is…',choices:['Spontaneous','Scheduled early','A little flexible','Someone else decides']}
+ {title:'I’m happiest when a plan is…',choices:['Spontaneous','Scheduled early','A little flexible','Someone else decides']},
+ {title:'Which silly nickname would I prefer?',choices:['Something adorable','Something funny','Something cool','Just my name']},
+ {title:'If we opened a business together, I would pick…',choices:['Coffee shop','Food truck','Game studio','Pet café']},
+ {title:'At an amusement park, my first stop would be…',choices:['Big roller coaster','Food stand','Gentle rides','Arcade']},
+ {title:'My dream weekend plan is…',choices:['Road trip','Stay home and relax','Concert or festival','Outdoor adventure']},
+ {title:'Which is my biggest pet peeve?',choices:['Loud chewing','Being late','Messy rooms','Spoilers']},
+ {title:'What would I do with an extra hour?',choices:['Sleep','Play games','Talk to friends','Make something']},
+ {title:'My ideal breakfast is…',choices:['Pancakes','Eggs and toast','Fruit and yogurt','Skip breakfast']},
+ {title:'The cutest couple activity is…',choices:['Cooking together','Matching costumes','Long walks','Building something']},
+ {title:'My reaction to a surprise party would be…',choices:['So excited','Very embarrassed','Happy but nervous','Please never do that']},
+ {title:'My ideal fictional world would be…',choices:['Wizard school','Space adventure','Fantasy kingdom','Cozy cartoon town']},
+ {title:'When I feel competitive, I…',choices:['Get laser focused','Trash talk playfully','Laugh at my mistakes','Pretend I do not care']},
+ {title:'What souvenir would I keep?',choices:['Postcard','Keychain','Local snacks','A photo']},
+ {title:'Which room would I renovate first?',choices:['Bedroom','Kitchen','Living room','Gaming corner']},
+ {title:'What do I bring to a picnic?',choices:['Sandwiches','Dessert','Music speaker','Games']},
+ {title:'My favorite kind of weather is…',choices:['Sunny and warm','Cold and crisp','Rainy and cozy','Snowy']},
+ {title:'If I joined a talent show, I would…',choices:['Sing','Dance','Do comedy','Make something artistic']},
+ {title:'I would rather get around by…',choices:['Car','Train','Bike','Walking']},
+ {title:'When watching a scary movie, I…',choices:['Scream','Laugh','Hide my eyes','Stay calm']},
+ {title:'My go-to snack flavor is…',choices:['Sweet','Salty','Spicy','Sour']},
+ {title:'If we adopted a fictional creature, I would choose…',choices:['Baby dragon','Unicorn','Talking cat','Tiny alien']}
 ];
 function shuffledIndices(length){
  const a=Array.from({length},(_,i)=>i);
