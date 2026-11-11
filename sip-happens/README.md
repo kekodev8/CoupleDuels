@@ -62,3 +62,23 @@ node --check public/app.js
 - No score or winner.
 
 The server handles chapter lengths and timing; upload all files, including `story.js`, `story.test.js`, and `public/app.js`, preserving the folder structure.
+
+
+## CoupleDuels V2.2 — Kart Clash (new fifth mode)
+
+- **Kart Clash** is an original two-player top-down real-time kart racer (not a Nintendo/Mario Kart game).
+- Choose one of **five drivers** (Blaze, Bubbles, Pickle, Nova, Ghost) with small stat differences.
+- Host chooses one of **five tracks** (Candy Coast, Neon Nights, Dusty Dash, Frostbite Pass, Cosmic Circuit).
+- Both players tap Ready, get a synchronized countdown, then race from separate phones.
+- Cars auto-accelerate. Hold **Left**, **Right**, or **Nitro**; steer around obstacles and keep to the roadway.
+- Nitro regenerates; glowing pickups refill it. Server simulates position, speed, obstacles, and finish order.
+- The losing player may choose a **small optional sip**, water, or a silly forfeit. Never mandatory.
+- No downloads for players. Deploy this Node app to Render as before and open your existing HTTPS website on each phone.
+
+### Update from V2.1
+
+In your GitHub `sip-happens` directory, add **race.js** and **race.test.js**; replace **server.js**, **public/app.js**, **public/style.css**, and **public/index.html**. Commit. Keep the Render root directory `sip-happens`. If auto-deploy is disabled, choose Manual Deploy → Deploy latest commit. Start a *new room* to select Kart Clash.
+
+### Testing notes
+
+`npm test` runs 15 existing and new logic tests. The two-phone live race and mobile touch controls still require actual device verification. Race rooms are held in server memory, as with the other modes, and reset if the instance restarts.
