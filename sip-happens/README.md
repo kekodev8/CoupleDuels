@@ -52,3 +52,13 @@ node --check public/app.js
 - Sound is optional and can be muted any time. No microphone permissions are needed for Create Story; it is a spoken, in-person game, not voice chat.
 - **Drinking is optional**. No upgrade points or gameplay outcomes depend on consuming alcohol; choose water or nonalcoholic drinks instead. Never pressure anyone to drink.
 - Logic tests pass; real two-phone network and audio interactions should still be tested on the deployed site.
+
+## Create Story pacing (V2.1)
+
+- Five chapters, with **4–6 full two-player exchanges per chapter** (8–12 speaking turns before each plot twist).
+- **45 seconds per player turn**, with an optional Done Speaking button for early finishes.
+- Plot-twist cards are **untimed** until both players press Ready.
+- After the fifth chapter, the final prompt is also untimed; each player gets one 45-second ending turn.
+- No score or winner.
+
+The server handles chapter lengths and timing; upload all files, including `story.js`, `story.test.js`, and `public/app.js`, preserving the folder structure.

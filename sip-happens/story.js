@@ -50,9 +50,49 @@ const ENDINGS=[
  'FINAL TWIST: A very unexpected hero saves the day. Explain how it all ends.',
  'FINAL TWIST: The world is safe—but something absurd will never be the same.'
 ];
+const TURN_SECONDS=45;
+const CHAPTER_COUNT=5;
+const MIN_EXCHANGES=4;
+const MAX_EXCHANGES=6;
 const sample=a=>a[crypto.randomInt(a.length)];
-function makeStory(){const twists=[...TWISTS];for(let i=twists.length-1;i>0;i--){const j=crypto.randomInt(i+1);[twists[i],twists[j]]=[twists[j],twists[i]];}return {step:0,stage:'turn',ready:[],opening:sample(OPENINGS),twists:twists.slice(0,4),ending:sample(ENDINGS),history:[],deadline:Date.now()+30000};}
-function publicStory(story,players){const ending=story.step>=10;const round=ending?5:Math.floor(story.step/2)+1;return {stage:story.stage,step:story.step,round,ending,turnPlayerId:players[story.step%2]?.id||null,turnName:players[story.step%2]?.name||'',deadline:story.stage==='turn'?story.deadline:null,opening:story.opening,prompt:story.stage==='twist'?(story.step===10?story.ending:story.twists[Math.floor(story.step/2)-1]):null,ready:story.ready.slice(),history:story.history.slice(),totalRounds:5};}
-function finishTurn(story,players){if(story.stage!=='turn')return false;story.history.push({name:players[story.step%2].name,round:story.step>=10?'Ending':Math.floor(story.step/2)+1});story.step++;if(story.step>=12){story.stage='finished';story.deadline=null;}else if(story.step%2===0){story.stage='twist';story.deadline=null;story.ready=[];}else story.deadline=Date.now()+30000;return true;}
-function readyTwist(story,id,players){if(story.stage!=='twist')return 'No plot twist to continue from.';if(!story.ready.includes(id))story.ready.push(id);if(players.every(p=>story.ready.includes(p.id))){story.ready=[];story.stage='turn';story.deadline=Date.now()+30000;}return null;}
-module.exports={OPENINGS,TWISTS,ENDINGS,makeStory,publicStory,finishTurn,readyTwist};
+function makeStory(){
+ const twists=[...TWISTS];
+ for(let i=twists.length-1;i>0;i--){const j=crypto.randomInt(i+1);[twists[i],twists[j]]=[twists[j],twists[i]];}
+ const chapterExchanges=Array.from({length:CHAPTER_COUNT},()=>crypto.randomInt(MIN_EXCHANGES,MAX_EXCHANGES+1));
+ const chapterEnds=[];let accumulated=0;
+ for(const exchanges of chapterExchanges){accumulated+=exchanges*2;chapterEnds.push(accumulated);}
+ return {step:0,stage:'turn',ready:[],opening:sample(OPENINGS),twists:twists.slice(0,CHAPTER_COUNT-1),ending:sample(ENDINGS),history:[],chapterExchanges,chapterEnds,deadline:Date.now()+TURN_SECONDS*1000};
+}
+function publicStory(story,players){
+ const endingStart=story.chapterEnds.at(-1);
+ const ending=story.step>=endingStart;
+ const chapterIndex=story.chapterEnds.findIndex(end=>story.step<end);
+ const round=ending?CHAPTER_COUNT:chapterIndex+1;
+ const previousEnd=round===1?0:story.chapterEnds[round-2];
+ const exchange=ending?null:Math.floor((story.step-previousEnd)/2)+1;
+ const isFinalTwist=story.stage==='twist'&&ending;
+ return {stage:story.stage,step:story.step,round,exchange,exchangesInChapter:story.chapterExchanges[round-1],ending,endingStart,totalTurns:endingStart+2,turnSeconds:TURN_SECONDS,
+  turnPlayerId:players[story.step%2]?.id||null,turnName:players[story.step%2]?.name||'',deadline:story.stage==='turn'?story.deadline:null,
+  opening:story.opening,prompt:story.stage==='twist'?(isFinalTwist?story.ending:story.twists[round-2]):null,
+  ready:story.ready.slice(),history:story.history.slice(),totalRounds:CHAPTER_COUNT};
+}
+function finishTurn(story,players){
+ if(story.stage!=='turn')return false;
+ const endingStart=story.chapterEnds.at(-1);
+ const chapter=story.chapterEnds.findIndex(end=>story.step<end)+1;
+ story.history.push({name:players[story.step%2].name,round:story.step>=endingStart?'Ending':chapter});
+ story.step++;
+ if(story.step>=endingStart+2){story.stage='finished';story.deadline=null;}
+ else if(story.chapterEnds.includes(story.step)){
+  story.stage='twist';story.deadline=null;story.ready=[];
+ }else{story.deadline=Date.now()+TURN_SECONDS*1000;}
+ return true;
+}
+function readyTwist(story,id,players){
+ if(story.stage!=='twist')return 'No plot twist to continue from.';
+ if(!players.some(p=>p.id===id))return 'Player not in room.';
+ if(!story.ready.includes(id))story.ready.push(id);
+ if(players.every(p=>story.ready.includes(p.id))){story.ready=[];story.stage='turn';story.deadline=Date.now()+TURN_SECONDS*1000;}
+ return null;
+}
+module.exports={OPENINGS,TWISTS,ENDINGS,TURN_SECONDS,CHAPTER_COUNT,MIN_EXCHANGES,MAX_EXCHANGES,makeStory,publicStory,finishTurn,readyTwist};
