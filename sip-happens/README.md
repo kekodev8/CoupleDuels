@@ -1,4 +1,4 @@
-# CoupleDuels — Game Night V2.0
+# CoupleDuels — Game Night V2.3 (Pause & Resume)
 
 A real-time browser game for two phones (Android + iPhone) with a private QR-code room.
 
@@ -7,7 +7,11 @@ A real-time browser game for two phones (Android + iPhone) with a private QR-cod
 - **Rapid-Fire Chaos:** 15 untimed prompts (5 from each of 3 stages), randomly selected from 90. Acting challenges advance after both players press Done. Recent prompts are avoided during rematches in the same room.
 - **Couples Compatibility:** both players privately answer the same 10 randomly selected questions from a 50-question bank, then each predicts the partner's previous answer on 5 questions. Combined match percentage is shown after the game.
 - **SipBattle:** select yourself + 2 of 7 allies, claim up to 5 upgrade points (no drinking required), buy character upgrades and fight turn-by-turn. Two new allies: Arrow (piercing shot) and Luna (moonlight shield).
-- **Create Story:** spoken cooperative storytelling with **five chapters**, each with two 30-second speaking turns. After each chapter, an unexpected story twist is shown **without a timer**, and both players press Ready to continue. The fifth twist is a randomized ending prompt. Player 1 begins the ending and Player 2 finishes it. No scores, winner or loser. No audio recording or story transcription; speak aloud together.
+- **Create Story:** spoken cooperative storytelling with **five chapters**, with 4–6 exchanges per chapter and 45-second speaking turns. After each chapter, an unexpected story twist is shown **without a timer**, and both players press Ready to continue. The fifth twist is a randomized ending prompt. Player 1 begins the ending and Player 2 finishes it. No scores, winner or loser. No audio recording or story transcription; speak aloud together.
+
+## Shared Pause / Resume
+
+Either player can tap **⏸ Pause** during an active game or results reveal. Both phones show a full-screen break overlay. **▶ Resume together** is available to either player. On pause, all game actions are temporarily blocked and the server freezes the story countdown, reveal timer, and Kart Clash simulation (including boost, obstacle delays, and the starting countdown). Rapid-Fire and Compatibility questions remain untimed. The current party and scores are preserved. Leaving the party is still a separate action.
 
 ## New design / sound
 
@@ -15,17 +19,15 @@ Mobile-first cards, large touch-friendly controls, illustrated SVG scene cards, 
 
 ## Deploy to your existing Render service
 
-1. Extract the zip; the extracted project folder is `sip-happens`.
-2. Upload **all files and folders inside `sip-happens`** to the **root** of your existing GitHub `CoupleDuels` repository (not the ZIP itself). In particular, include **new `story.js` and `public/art/`** and replace old `server.js`, `game.js`, `sipbattle.js`, `public/app.js`, `public/style.css`, `public/index.html`.
-3. Commit to `main`. Render should redeploy automatically if auto-deploy is enabled. Otherwise use **Manual Deploy → Deploy latest commit** in Render.
-4. Open the public Render URL on both phones; create a **new room** after redeploying to load the updated version.
-5. If the browser keeps showing the previous design, refresh the page or close/reopen the web tab.
+Your previous setup used **Root Directory: `sip-happens`**, so keep that setting if your project is in `CoupleDuels/sip-happens` on GitHub.
 
-Render web service configuration:
-- Language: Node
-- Root Directory: empty
-- Build Command: `npm install`
-- Start Command: `npm start`
+1. Extract this ZIP. It contains one folder named `sip-happens`.
+2. In GitHub, open `CoupleDuels/sip-happens` and upload the **contents** of the extracted `sip-happens` folder there. Do not accidentally create `sip-happens/sip-happens`.
+3. Critical updated files are `server.js`, `public/app.js`, `public/index.html`, `public/style.css`; **new** files are `pause.js` and `pause.test.js`.
+4. Commit the files to `main`. Render redeploys automatically if enabled; otherwise use Manual Deploy → Deploy latest commit.
+5. When Render reports Live, refresh the game on **both phones** and create a new room to test the pause feature.
+
+Render settings: Node, Root Directory `sip-happens` for the nested GitHub structure above, Build `npm install`, Start `npm start`. If you instead store the project files at repository root, leave Root Directory blank.
 
 ## Local development
 
