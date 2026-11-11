@@ -63,7 +63,7 @@ function transition(room){
     for(const p of room.players)room.compat.selfAnswers[p.id][room.index]=p.answer;
     room.index++;
     room.players.forEach(p=>p.answer=null);
-    room.phase='playing';room.deadline=Date.now()+(room.index<10?25000:20000);
+    room.phase='playing';room.deadline=null;
    }else{
     const qIndex=room.compat.guessIndices[room.index-10];
     for(const p of room.players){
@@ -92,7 +92,7 @@ function transition(room){
  }else if(room.phase==='reveal'){
   room.index++;
   if(room.index=== (room.mode==='compatibility'?15:rounds.length)){room.phase='finished';room.deadline=null;}
-  else{room.phase='playing';room.players.forEach(p=>p.answer=null);room.deadline=Date.now()+(room.mode==='compatibility'?20000:(rounds[room.index].type==='challenge'?18000:12000));}
+  else{room.phase='playing';room.players.forEach(p=>p.answer=null);room.deadline=null;}
  }
  room.updated=Date.now();broadcast(room);schedule(room);
 }
@@ -149,7 +149,7 @@ io.on('connection',socket=>{
    room.compat={...createCompatibilityDeck(),selfAnswers:{},guessAnswers:{},correct:{},matches:0};
    for(const p of room.players){room.compat.selfAnswers[p.id]=Array(10).fill(null);room.compat.guessAnswers[p.id]=Array(5).fill(null);room.compat.correct[p.id]=0;}
   }else room.compat=null;
-  room.deadline=room.mode==='sipbattle'?null:Date.now()+(room.mode==='compatibility'?25000:12000);
+  room.deadline=null; // Untimed questions and challenges: both players advance by answering.
   room.players.forEach(p=>{p.score=0;p.answer=null;p.ready=false});
   broadcast(room);schedule(room);ackOK(ack,{});
  });

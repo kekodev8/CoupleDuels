@@ -36,8 +36,8 @@ Deploy this folder as a **Node.js web service** on Render, Railway, or another N
 - **Match:** both independently pick the same choice → +2 each.
 - **Vote:** both choose the same actual person, taking their player-relative options into account → +2 each.
 - **Challenge:** both tap DONE → +1 each.
-- Server-synced countdown: 12 seconds to answer votes or matches, 18 seconds for challenges.
-- Reveals last 3.5 seconds and rounds advance automatically. Unanswered rounds expire without points.
+- No countdowns on questions or challenges: both players answer (or tap DONE) to proceed.
+- After both players finish, the answer reveal lasts 3.5 seconds, then the next round starts. Questions never expire.
 - The pace never requires alcohol consumption; nonalcoholic drinks are always welcome.
 
 ## Dev notes / next enhancements
@@ -47,9 +47,9 @@ Add packs and question editor, accessibility settings, optional safe drinking-ru
 
 Select **Couples Compatibility** in the room lobby before pressing Start. The host picks the mode, and both phones update together.
 
-**Phase 1 — 10 questions about yourselves:** Each person gets the same 10 randomly selected prompts from a 30-question bank and privately chooses one of four answers. There are 25 seconds per question. Answers are never sent to the other phone during this phase, so neither player can copy the partner's response. Questions advance as soon as both answer, or when time runs out.
+**Phase 1 — 10 questions about yourselves:** Each person gets the same 10 randomly selected prompts from a 30-question bank and privately chooses one of four answers. There is no countdown; both players have as long as they need. Answers are never sent to the other phone during this phase, so neither player can copy the partner's response. Questions advance when both players answer.
 
-**Phase 2 — 5 questions about your partner:** The game randomly selects 5 of the *same* original questions. Each person predicts the answer their partner gave. Both guess simultaneously, with 20 seconds per question. A five-second synchronized reveal then displays each real answer and each guess.
+**Phase 2 — 5 questions about your partner:** The game randomly selects 5 of the *same* original questions. Each person predicts the answer their partner gave. Both guess independently without a timer. A five-second synchronized reveal then displays each real answer and each guess.
 
 **Scoring:** Each correct prediction earns the guessing player one point. There are five guesses per player and ten possible correct guesses as a couple; compatibility is `(correct guesses / 10) × 100%`. The final screen shows the shared percentage, individual 0–5 scores, and a question-by-question breakdown. An unanswered question is not counted as a correct match; no drinking penalties are attached. This is an entertainment quiz, not a scientific measure of relationship compatibility.
 
@@ -75,3 +75,13 @@ Note: Shop points are intentionally not conditional on drinking; this avoids rew
 - If connection drops, Leave still clears the local session so the player isn't trapped on a game screen.
 
 To update a deployed GitHub repository, replace `server.js`, `public/app.js`, `public/index.html`, and `public/style.css` with the new versions, commit to `main`, and let Render redeploy.
+
+## V1.4: Untimed gameplay
+- Rapid-Fire Chaos votes, match questions and acting challenges do not have countdowns.
+- Couples Compatibility personal questions and partner guesses are untimed too.
+- Both players must submit their answer or tap DONE for a challenge before progression.
+- Short result reveals remain automatic (3.5 seconds in Chaos, 5 seconds in Compatibility).
+- SipBattle remains turn-based and untimed.
+- If a player disconnects, the room waits for reconnection instead of skipping their answer.
+
+To update an existing Render deployment, replace `server.js`, `game.js`, and `public/app.js` in the existing GitHub repository and commit to `main`.
