@@ -13,3 +13,8 @@
 .hp{height:7px;background:#592d43;border-radius:8px;overflow:hidden;margin-top:10px}.hp div{height:100%;background:linear-gradient(90deg,#8ee1bd,#c2e88a)}
 .battle-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.battle-actions button{padding:13px 6px;font-size:12px;background:#604468;color:white;border:1px solid #9c668b}
 .battle-log{background:#1a1b31;border:1px solid #3b3b56;border-radius:16px;padding:15px;margin:20px 0}.battle-log p{font-size:12px;margin:8px 0}
+
+/* Always-available escape from any room, including active matches. */
+.leave-any{border:1px solid #f38b9c;background:#241a2b;color:#ffced7;border-radius:12px;padding:9px 12px;font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap;}
+.leave-any[hidden]{display:none!important;}
+.top{gap:8px;flex-wrap:wrap;}

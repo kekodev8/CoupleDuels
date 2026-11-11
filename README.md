@@ -66,3 +66,12 @@ In the shop, tap **+1 Power Point** up to five times, and spend 1–5 points on 
 Choose a living attacker, a living enemy target, and **Attack**, **Special**, or **Guard**. Your main character is affected by weapon/armor/special upgrades, and allies have their own special abilities. The server validates all actions, computes HP and damage, keeps turn order, and declares a winner when all three enemies are defeated (or after 100 turns based on remaining total HP). The losing player may *optionally* take a small sip or choose an alcohol-free forfeit. Rematches return both players to the lobby and reset battle state.
 
 Note: Shop points are intentionally not conditional on drinking; this avoids rewarding fast alcohol consumption. The game is playable with water or no beverages at all. No time limit is placed on the battle.
+
+## V1.3: Leave party fix
+- A **Leave party** button is visible throughout active Rapid-Fire, Compatibility and SipBattle sessions, not only in the lobby/finale.
+- Leaving sends a server event before returning to the home screen; this releases the player's room slot.
+- When a guest leaves, the host returns to the lobby and may invite a second player again.
+- When the host leaves, the room closes and the guest returns to the home screen.
+- If connection drops, Leave still clears the local session so the player isn't trapped on a game screen.
+
+To update a deployed GitHub repository, replace `server.js`, `public/app.js`, `public/index.html`, and `public/style.css` with the new versions, commit to `main`, and let Render redeploy.

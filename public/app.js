@@ -1,7 +1,7 @@
 const socket=io({reconnection:true});
 const el=document.getElementById('screen');
 const status=document.getElementById('connection');
-let state=null,session=null,joining=false,toastTimeout;
+let state=null,session=null,joining=false,leaving=false,toastTimeout;
 setInterval(()=>{const clock=qs('#countdown');if(clock&&state?.deadline)clock.textContent=Math.max(0,Math.ceil((state.deadline-Date.now())/1000))+'s';},200);
 const safe=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const qs=(q)=>document.querySelector(q);
@@ -9,7 +9,18 @@ const roomFromUrl=(new URLSearchParams(location.search).get('room')||'').replace
 function notice(text){const t=qs('#toast');t.textContent=text;t.classList.add('show');clearTimeout(toastTimeout);toastTimeout=setTimeout(()=>t.classList.remove('show'),3300)}
 function emit(event,data={}){return new Promise(resolve=>socket.timeout(9000).emit(event,data,(err,res)=>resolve(err?{ok:false,error:'Connection timed out. Try again.'}:res)))}
 function remember(code,token,name){session={code,token,name};localStorage.setItem('sipSession',JSON.stringify(session));history.replaceState({},'',`/?room=${code}`)}
-function forget(){localStorage.removeItem('sipSession');session=null;state=null;history.replaceState({},'','/');location.reload()}
+function returnHome(message){localStorage.removeItem('sipSession');session=null;state=null;history.replaceState({},'','/');renderHome();updateLeaveButton();if(message)notice(message)}
+async function forget(){
+ if(leaving)return;
+ leaving=true;
+ // Forget locally first, so even a disconnected server can't trap you.
+ localStorage.removeItem('sipSession');session=null;
+ const result=socket.connected?await emit('leave'):null;
+ leaving=false;
+ returnHome(result?.ok===false?'Left on this device. The server may need to reconnect.':null);
+}
+function updateLeaveButton(){let button=qs('#leaveAny');if(button)button.hidden=!state;}
+
 function nameValue(){return (qs('#nickname')?.value||localStorage.getItem('sipName')||'Player').trim().slice(0,20)||'Player'}
 function renderHome(){el.innerHTML=`<section class="landing"><div class="eyebrow">TWO PHONES · ONE CHAOTIC DUO</div><h1>LOVE IS A <em>GAME.</em><br>PLAY IT.</h1><p>Three modes, two phones, one hilarious night. Go rapid-fire or find out how well you really know each other.</p><div class="hero-chip">⚡ Rapid-Fire · 💘 Compatibility · ⚔️ SipBattle</div><div class="panel"><label>Your nickname</label><input id="nickname" maxlength="20" placeholder="Your name" value="${safe(localStorage.getItem('sipName')||'')}"><button id="create" class="primary">CREATE A ROOM <span>↗</span></button><div class="separator"><span>or join your partner</span></div><input id="roomInput" maxlength="6" placeholder="6-character room code" value="${safe(roomFromUrl)}" autocomplete="off"><button id="join" class="secondary">JOIN ROOM</button></div><p class="fine">No accounts · Android + iPhone · Optional sips, never required</p></section>`;
  qs('#create').onclick=async()=>{const name=nameValue();localStorage.setItem('sipName',name);const r=await emit('create',{name});if(r.ok)remember(r.code,r.token,name);else notice(r.error)};
@@ -107,10 +118,12 @@ function renderBattle(){const b=state.battle;if(!b)return root('<p>Loading battl
 }
 function renderBattleDraftLocal(choices){document.querySelectorAll('[data-ally]').forEach(b=>b.classList.toggle('picked',choices.includes(b.dataset.ally)));const ready=qs('#battleReady');if(ready)ready.disabled=choices.length!==2;}
 async function battleSendRestart(){const r=await emit('restart');if(!r.ok)notice(r.error);else{battleAllyChoices=[];battleActor='hero';battleTarget='hero';}}
-function render(){if(!state)return renderHome();if(state.phase==='lobby')return renderLobby();if(state.mode==='sipbattle')return renderBattle();if(state.mode==='compatibility'){if(state.phase==='finished')return renderCompatibilityEnd();return renderCompatibilityRound()}if(state.phase==='finished')return renderEnd();renderRound()}
+function render(){updateLeaveButton();if(!state)return renderHome();if(state.phase==='lobby')return renderLobby();if(state.mode==='sipbattle')return renderBattle();if(state.mode==='compatibility'){if(state.phase==='finished')return renderCompatibilityEnd();return renderCompatibilityRound()}if(state.phase==='finished')return renderEnd();renderRound()}
 socket.on('connect',async()=>{status.textContent='● Live connected';status.style.color='#a5e6ba';if(joining)return;let stored;try{stored=JSON.parse(localStorage.getItem('sipSession')||'null')}catch{};
  if(stored?.code&&stored?.token){joining=true;const r=await emit('join',{code:stored.code,token:stored.token,name:stored.name});joining=false;if(!r.ok){localStorage.removeItem('sipSession');session=null;state=null;renderHome();notice('Your previous room expired. Create a new one.')}else session=stored}
  else if(!state)renderHome();});
 socket.on('disconnect',()=>{status.textContent='● Reconnecting…';status.style.color='#ffca9e'});
-socket.on('state',next=>{state=next;render()});socket.on('replaced',()=>notice('This player rejoined on a different tab/device.'));
+socket.on('state',next=>{if(leaving)return;state=next;render()});
+socket.on('room:closed',payload=>{returnHome(payload?.message||'Room closed.');});
+qs('#leaveAny')?.addEventListener('click',forget);socket.on('replaced',()=>notice('This player rejoined on a different tab/device.'));
 renderHome();

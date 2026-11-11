@@ -181,6 +181,32 @@ io.on('connection',socket=>{
   if(room.phase!=='finished')return ackError(ack,'Finish the game first.');
   clearTimeout(room.timer);room.deadline=null;room.phase='lobby';room.index=0;room.players.forEach(p=>{p.score=0;p.answer=null;p.ready=false});broadcast(room);ackOK(ack,{});
  });
+ socket.on('leave',(_,ack)=>{
+  const {room,player}=current(socket);
+  if(!room||!player){socket.data={};return ackOK(ack,{});}
+  // Ignore stale tabs so they cannot remove a player on a different device.
+  if(player.socketId!==socket.id){socket.data={};return ackOK(ack,{});}
+  const wasHost=room.players[0]?.id===player.id;
+  socket.leave(room.code);
+  socket.data={};
+  room.updated=Date.now();
+  if(wasHost){
+   clearTimeout(room.timer);room.timer=null;rooms.delete(room.code);
+   for(const remaining of room.players){
+    if(remaining.id!==player.id&&remaining.socketId){
+     const other=io.sockets.sockets.get(remaining.socketId);
+     if(other){other.leave(room.code);other.data={};other.emit('room:closed',{message:'The host left. Create a new room to play again.'});}
+    }
+   }
+  }else{
+   room.players=room.players.filter(p=>p.id!==player.id);
+   clearTimeout(room.timer);room.timer=null;room.phase='lobby';room.index=0;room.deadline=null;
+   room.battle=null;room.compat=null;
+   room.players.forEach(p=>{p.answer=null;p.ready=false;p.score=0;});
+   broadcast(room);
+  }
+  ackOK(ack,{});
+ });
  socket.on('disconnect',()=>{
   const {room,player}=current(socket);
   if(player&&player.socketId===socket.id){player.socketId=null;room.updated=Date.now();broadcast(room);}
