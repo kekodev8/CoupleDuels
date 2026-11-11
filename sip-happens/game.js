@@ -842,22 +842,20 @@ const rapidBank = [
     "stage": 3
   }
 ];
-const RAPID_ROUNDS=15;
-function shuffle(items){
- const shuffled=[...items];
- for(let i=shuffled.length-1;i>0;i--){const j=crypto.randomInt(i+1);[shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]];}
- return shuffled;
-}
+const RAPID_ROUNDS=20;
+function shuffle(items){const shuffled=[...items];for(let i=shuffled.length-1;i>0;i--){const j=crypto.randomInt(i+1);[shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]];}return shuffled;}
 function createRapidDeck(history=[]){
- const used=new Set(history);
- const chosen=[];
- for(let stage=1;stage<=3;stage++){
-  const candidates=rapidBank.map((r,i)=>({...r,id:i})).filter(r=>r.stage===stage);
-  const fresh=shuffle(candidates.filter(r=>!used.has(r.id)));
-  const recycled=shuffle(candidates.filter(r=>used.has(r.id)));
-  // Up to five different questions per stage, preferring ones unseen in this room.
-  chosen.push(...[...fresh,...recycled].slice(0,5));
+ const used=new Set(history),chosen=[],all=rapidBank.map((r,i)=>({...r,id:i}));
+ const questions=shuffle(all.filter(r=>r.type!=='challenge'&&!used.has(r.id))).concat(shuffle(all.filter(r=>r.type!=='challenge'&&used.has(r.id))));
+ const prompts=shuffle(all.filter(r=>r.type==='challenge'&&!used.has(r.id))).concat(shuffle(all.filter(r=>r.type==='challenge'&&used.has(r.id))));
+ for(let chapter=0;chapter<4;chapter++){
+  const stage=Math.min(3,chapter+1);
+  const chunk=questions.splice(0,4);
+  chosen.push(...chunk.map(r=>({...r,stage})));
+  const prompt=prompts.shift();
+  if(prompt)chosen.push({...prompt,stage});
  }
+ if(chosen.length!==RAPID_ROUNDS)throw new Error('Not enough Rapid-Fire cards');
  return {rounds:chosen,ids:chosen.map(r=>r.id)};
 }
 function publicRound(round,index){const {id,...rest}=round;return {...rest,number:index+1};}

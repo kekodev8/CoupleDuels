@@ -10,6 +10,7 @@ function resumeRoom(room,now=Date.now()){
  const elapsed=Math.max(0,now-room.pausedAt);
  if(room.deadline)room.deadline+=elapsed;
  if(room.story?.deadline)room.story.deadline+=elapsed;
+ if(room.mini?.deadline)room.mini.deadline+=elapsed;
  if(room.race){
   if(room.race.stage==='countdown')room.race.startAt+=elapsed;
   room.race.lastUpdate=now;

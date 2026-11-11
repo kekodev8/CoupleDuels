@@ -8,6 +8,7 @@ const {RAPID_ROUNDS,createRapidDeck,publicRound,createCompatibilityDeck}=require
 const battle=require('./sipbattle');
 const storyEngine=require('./story');
 const kart=require('./race');
+const mini=require('./minigames');
 const {pauseRoom,resumeRoom}=require('./pause');
 const app=express();
 app.disable('x-powered-by');
@@ -36,7 +37,7 @@ function snapshot(room,token){
  const compat=room.mode==='compatibility';
  const isActive=room.phase==='playing'||room.phase==='reveal';
  let round=null,reveal=null,summary=null;
- if(room.mode==='story'||room.mode==='race'||room.mode==='sipbattle') { /* Story state is served independently from quiz rounds. */ }else if(compat && isActive){
+ if(['story','race','sipbattle','mindmeld','emojirush','tapduel'].includes(room.mode)) { /* Story state is served independently from quiz rounds. */ }else if(compat && isActive){
   const self=room.index<10,questionIndex=self?room.index:room.compat.guessIndices[room.index-10];
   const q=room.compat.questions[questionIndex];
   round={number:room.index+1,total:15,type:self?'self':'guess',title:q.title,choices:q.choices,stage:self?1:2,
@@ -57,7 +58,7 @@ function snapshot(room,token){
    breakdown:room.compat.guessIndices.map((qi,order)=>({question:room.compat.questions[qi].title,
     choices:room.compat.questions[qi].choices,players:room.players.map(p=>({id:p.id,name:p.name,selfAnswer:room.compat.selfAnswers[p.id][qi],guess:room.compat.guessAnswers[p.id][order],partnerAnswer:room.compat.selfAnswers[room.players.find(other=>other.id!==p.id).id][qi]}))}))};
  }
- return {race:room.mode==='race'&&room.race?kart.publicRace(room.race):null,story:room.mode==='story'&&room.story?storyEngine.publicStory(room.story,room.players):null,battle:room.mode==='sipbattle'&&room.battle?battle.publicBattle(room.battle,room.players):null,code:room.code,mode:room.mode,phase:room.phase,paused:!!room.paused,pausedBy:room.pausedBy||null,players:room.players.map(p=>({id:p.id,name:p.name,connected:!!p.socketId,score:p.score,answered:isActive?!!(p.answer!==null):undefined})),youId:you?.id,hostId:room.players[0]?.id,roundIndex:room.index,deadline:room.deadline||null,round,reveal,summary};
+ return {mini:room.mini?mini.publicMini(room.mini):null,race:room.mode==='race'&&room.race?kart.publicRace(room.race):null,story:room.mode==='story'&&room.story?storyEngine.publicStory(room.story,room.players):null,battle:room.mode==='sipbattle'&&room.battle?battle.publicBattle(room.battle,room.players):null,code:room.code,mode:room.mode,phase:room.phase,paused:!!room.paused,pausedBy:room.pausedBy||null,players:room.players.map(p=>({id:p.id,name:p.name,connected:!!p.socketId,score:p.score,answered:isActive?!!(p.answer!==null):undefined})),youId:you?.id,hostId:room.players[0]?.id,roundIndex:room.index,deadline:room.deadline||null,round,reveal,summary};
 }
 function transition(room){
  if(room.paused)return;
@@ -121,7 +122,7 @@ io.on('connection',socket=>{
  socket.on('create',({name}={},ack)=>{
   if(socket.data.code)return ackError(ack,'Already in a room');
   const code=roomCode(),token=uid();
-  const room={code,phase:'lobby',mode:'rapid',index:0,compat:null,battle:null,story:null,race:null,paused:false,pausedAt:null,pausedBy:null,rapidRounds:null,rapidHistory:[],updated:Date.now(),players:[{id:uid(),token,name:cleanName(name),socketId:null,score:0,answer:null,ready:false}]};
+  const room={code,phase:'lobby',mode:'rapid',index:0,compat:null,battle:null,story:null,race:null,mini:null,paused:false,pausedAt:null,pausedBy:null,rapidRounds:null,rapidHistory:[],updated:Date.now(),players:[{id:uid(),token,name:cleanName(name),socketId:null,score:0,answer:null,ready:false}]};
   rooms.set(code,room);attach(socket,room,room.players[0]);ackOK(ack,{code,token});
  });
  socket.on('join',({code,token,name}={},ack)=>{
@@ -140,7 +141,7 @@ io.on('connection',socket=>{
   const {room,player}=current(socket);
   if(!room||!player||player.id!==room.players[0].id)return ackError(ack,'Host only.');
   if(room.phase!=='lobby')return ackError(ack,'Choose a mode before starting.');
-  if(!['rapid','compatibility','sipbattle','story','race'].includes(mode))return ackError(ack,'Unknown game mode.');
+  if(!['rapid','compatibility','sipbattle','story','race','mindmeld','emojirush','tapduel'].includes(mode))return ackError(ack,'Unknown game mode.');
   room.mode=mode;room.updated=Date.now();broadcast(room);ackOK(ack,{});
  });
  socket.on('start',(_,ack)=>{
@@ -153,6 +154,7 @@ io.on('connection',socket=>{
   room.battle=room.mode==='sipbattle'?battle.makeBattle(room.players):null;
   room.story=room.mode==='story'?storyEngine.makeStory():null;
   room.race=room.mode==='race'?kart.createRace(room.players):null;
+  room.mini=['mindmeld','emojirush','tapduel'].includes(room.mode)?mini.make(room.mode,room.players):null;
   if(room.mode==='rapid'){
    const deck=createRapidDeck(room.rapidHistory);
    room.rapidRounds=deck.rounds;room.rapidHistory.push(...deck.ids);
@@ -194,6 +196,23 @@ io.on('connection',socket=>{
   if(room.players.every(p=>p.answer!==null)){transition(room);ackOK(ack,{});return;}
   broadcast(room);ackOK(ack,{});
  });
+ socket.on('mini:answer',({answer}={},ack)=>{
+  const {room,player}=current(socket);
+  if(!room||!player||room.paused||room.phase!=='playing'||!room.mini)return ackError(ack,'Game unavailable.');
+  const err=mini.answer(room.mini,player.id,answer);if(err)return ackError(ack,err);
+  room.updated=Date.now();broadcast(room);ackOK(ack,{});
+ });
+ socket.on('mini:ready',(_,ack)=>{
+  const {room,player}=current(socket);
+  if(!room||!player||room.paused||room.phase!=='playing'||!room.mini)return ackError(ack,'Game unavailable.');
+  const err=mini.ready(room.mini,player.id);if(err)return ackError(ack,err);
+  room.updated=Date.now();broadcast(room);ackOK(ack,{});
+ });
+ socket.on('mini:tap',()=>{
+  const {room,player}=current(socket);
+  if(!room||!player||room.paused||room.phase!=='playing'||!room.mini)return;
+  mini.tap(room.mini,player.id);room.updated=Date.now();broadcast(room);
+ });
  socket.on('story:done',(_,ack)=>{const {room,player}=current(socket);if(!room||!player||room.mode!=='story'||room.paused||room.phase!=='playing'||room.story.stage!=='turn')return ackError(ack,'Story turn not available.');if(room.players[room.story.step%2].id!==player.id)return ackError(ack,'Wait for your turn.');storyEngine.finishTurn(room.story,room.players);if(room.story.stage==='finished')room.phase='finished';room.updated=Date.now();broadcast(room);schedule(room);ackOK(ack,{});});
  socket.on('story:ready',(_,ack)=>{const {room,player}=current(socket);if(!room||!player||room.mode!=='story'||room.paused||room.phase!=='playing')return ackError(ack,'Story not active.');const err=storyEngine.readyTwist(room.story,player.id,room.players);if(err)return ackError(ack,err);room.updated=Date.now();broadcast(room);schedule(room);ackOK(ack,{});});
  socket.on('race:choose',({character}={},ack)=>raceAction(socket,ack,({room,player})=>kart.choose(room.race,player.id,character)));
@@ -214,7 +233,7 @@ io.on('connection',socket=>{
   const {room,player}=current(socket);
   if(!room||!player||player.id!==room.players[0].id)return ackError(ack,'Host only.');
   if(room.phase!=='finished')return ackError(ack,'Finish the game first.');
-  clearTimeout(room.timer);room.deadline=null;room.phase='lobby';room.paused=false;room.pausedAt=null;room.pausedBy=null;room.index=0;room.story=null;room.players.forEach(p=>{p.score=0;p.answer=null;p.ready=false});broadcast(room);ackOK(ack,{});
+  clearTimeout(room.timer);room.deadline=null;room.phase='lobby';room.paused=false;room.pausedAt=null;room.pausedBy=null;room.index=0;room.story=null;room.mini=null;room.race=null;room.battle=null;room.players.forEach(p=>{p.score=0;p.answer=null;p.ready=false});broadcast(room);ackOK(ack,{});
  });
  socket.on('leave',(_,ack)=>{
   const {room,player}=current(socket);
@@ -236,7 +255,7 @@ io.on('connection',socket=>{
   }else{
    room.players=room.players.filter(p=>p.id!==player.id);
    clearTimeout(room.timer);room.timer=null;room.phase='lobby';room.index=0;room.deadline=null;room.paused=false;room.pausedAt=null;room.pausedBy=null;
-   room.battle=null;room.compat=null;room.story=null;room.race=null;
+   room.battle=null;room.compat=null;room.story=null;room.race=null;room.mini=null;
    room.players.forEach(p=>{p.answer=null;p.ready=false;p.score=0;});
    broadcast(room);
   }
@@ -250,7 +269,7 @@ io.on('connection',socket=>{
 function raceAction(socket,ack,fn){const {room,player}=current(socket);if(!room||!player||room.paused||room.mode!=='race'||!room.race||room.phase!=='playing')return ackError(ack,'Race unavailable.');const error=fn({room,player});if(error)return ackError(ack,error);room.updated=Date.now();broadcast(room);ackOK(ack,{});}
 function battleAction(socket,ack,fn){const {room,player}=current(socket);if(!room||!player||room.paused||room.mode!=='sipbattle'||!room.battle||!['playing','finished'].includes(room.phase))return ackError(ack,'Battle unavailable.');try{const error=fn({room,player});if(error)return ackError(ack,error);room.updated=Date.now();broadcast(room);ackOK(ack,{});}catch(e){console.error('Battle action error:',e);ackError(ack,'Move failed.');}}
 function current(socket){const room=rooms.get(socket.data?.code);return {room,player:room&&findPlayer(room,socket.data.token)};}
-setInterval(()=>{for(const room of rooms.values()){if(room.mode==='race'&&!room.paused&&room.race&&room.phase==='playing'){kart.advance(room.race);if(room.race.stage==='finished')room.phase='finished';if(['countdown','racing','finished'].includes(room.race.stage))broadcast(room);}}},100).unref();
+setInterval(()=>{for(const room of rooms.values()){if(room.mini&&!room.paused&&room.phase==='playing'){if(mini.tick(room.mini)){if(room.mini.stage==='finished')room.phase='finished';room.updated=Date.now();broadcast(room);}}if(room.mode==='race'&&!room.paused&&room.race&&room.phase==='playing'){kart.advance(room.race);if(room.race.stage==='finished')room.phase='finished';if(['countdown','racing','finished'].includes(room.race.stage))broadcast(room);}}},100).unref();
 setInterval(()=>{const cutoff=Date.now()-1000*60*60*6;for(const [key,room] of rooms)if(room.updated<cutoff){clearTimeout(room.timer);rooms.delete(key)};},60000).unref();
 const port=process.env.PORT||3000;
 if(require.main===module)server.listen(port,()=>console.log(`Sip Happens listening on http://localhost:${port}`));

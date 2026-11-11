@@ -1,13 +1,26 @@
-# CoupleDuels — Game Night V2.3 (Pause & Resume)
+# CoupleDuels — V2.4: Arcade Expansion
 
 A real-time browser game for two phones (Android + iPhone) with a private QR-code room.
 
 ## Game modes
 
-- **Rapid-Fire Chaos:** 15 untimed prompts (5 from each of 3 stages), randomly selected from 90. Acting challenges advance after both players press Done. Recent prompts are avoided during rematches in the same room.
+- **Rapid-Fire Chaos:** 20 untimed cards: four chapters, each with 4 random questions followed by 1 acting/challenge prompt, sampled from a 90-card bank. Acting challenges advance after both players press Done. Recent prompts are avoided during rematches in the same room.
 - **Couples Compatibility:** both players privately answer the same 10 randomly selected questions from a 50-question bank, then each predicts the partner's previous answer on 5 questions. Combined match percentage is shown after the game.
 - **SipBattle:** select yourself + 2 of 7 allies, claim up to 5 upgrade points (no drinking required), buy character upgrades and fight turn-by-turn. Two new allies: Arrow (piercing shot) and Luna (moonlight shield).
 - **Create Story:** spoken cooperative storytelling with **five chapters**, with 4–6 exchanges per chapter and 45-second speaking turns. After each chapter, an unexpected story twist is shown **without a timer**, and both players press Ready to continue. The fifth twist is a randomized ending prompt. Player 1 begins the ending and Player 2 finishes it. No scores, winner or loser. No audio recording or story transcription; speak aloud together.
+
+## New modes in V2.4
+
+- **Mind Meld:** 7 rounds. Both choose secretly from 4 options and score 2 points each for matching choices. No question timers.
+- **Emoji Rush:** 8 emoji puzzles; independently guess the correct phrase, movie, or idea from four choices. Each correct answer earns 1 point. No question timers.
+- **Tap Duel:** 5 simultaneous eight-second heats. Both players tap on their own phones; most valid taps wins 1 point. A 2.5-second countdown starts after both tap Ready, and the server rate-limits taps to protect against impossible input speeds. Shared Pause freezes the heat countdown.
+- **Kart Clash visual upgrade:** the same tested 2D racing engine now has vector-drawn multi-layer roads, richer map-specific scenery, detailed karts, obstacle glows, checkered finish markers, and enhanced HUD. It is still a 2D arcade racer, not full 3D.
+
+## Important updating instructions
+
+Your Render service should still use **Root Directory `sip-happens`** if you uploaded your game beneath that GitHub folder. Do not put a new `sip-happens` folder inside the existing one. Upload the *contents* of the new `sip-happens/` folder in the ZIP to `CoupleDuels/sip-happens/` on GitHub, **replacing** existing files (especially `server.js`, `game.js`, `public/app.js`, `public/index.html`, `public/style.css`, `rapid.test.js`, and `pause.js`) and **adding** `minigames.js` and `minigames.test.js`. Then commit and check the Render deployment logs, refresh both phones, and create a new room.
+
+Because past updates sometimes landed in the wrong GitHub folder, verify that the deployed directory contains `minigames.js` beside `server.js`. `package.json` must be in that same directory. The service needs `npm install` and `npm start`.
 
 ## Shared Pause / Resume
 
