@@ -97,3 +97,8 @@ In your GitHub `sip-happens` directory, add **race.js** and **race.test.js**; re
 ### Testing notes
 
 `npm test` runs 15 existing and new logic tests. The two-phone live race and mobile touch controls still require actual device verification. Race rooms are held in server memory, as with the other modes, and reset if the instance restarts.
+
+## Racing upgrades (motion + mystery boxes)
+Kart Clash now supports optional phone tilt steering in the browser. On iOS, tap **Enable Motion Steering** after starting a race to grant Safari motion access; permission requires HTTPS. On Android, allow sensor permissions if prompted. Orientation sensors may be unavailable in some browsers. Use the on-screen steering buttons as a fallback. Landscape orientation is recommended; orientation lock is controlled by phone/browser settings and cannot always be forced by the game.
+
+Drive over question-mark item boxes to collect one random item. Tap **Use Item** to activate Turbo Burst, Bubble Shield, Zap Bolt, Oil Slick, or Nitro Refill. The server validates items and applies effects. The original five tracks, eight modes, pause/resume, and game flow remain available. The art remains mostly procedural; the large image-asset redesign and three additional modes are **not part of this particular build**.

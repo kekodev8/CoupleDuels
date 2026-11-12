@@ -218,6 +218,7 @@ io.on('connection',socket=>{
  socket.on('race:choose',({character}={},ack)=>raceAction(socket,ack,({room,player})=>kart.choose(room.race,player.id,character)));
  socket.on('race:track',({track}={},ack)=>raceAction(socket,ack,({room,player})=>kart.trackChoice(room.race,player.id,room.players[0].id,track)));
  socket.on('race:ready',(_,ack)=>raceAction(socket,ack,({room,player})=>kart.ready(room.race,player.id)));
+ socket.on('race:item',()=>{const {room,player}=current(socket);if(room?.mode==='race'&&!room.paused&&room.race&&player){const error=kart.useItem(room.race,player.id);if(!error){room.updated=Date.now();broadcast(room);}}});
  socket.on('race:input',({steer=0,boost=false}={})=>{const {room,player}=current(socket);if(room?.mode==='race'&&!room.paused&&room.race&&player)kart.input(room.race,player.id,steer,boost);});
  socket.on('battle:select',({allies}={},ack)=>battleAction(socket,ack,({room,player})=>battle.select(room.battle,player.id,allies)));
  socket.on('battle:ready',(_,ack)=>battleAction(socket,ack,({room,player})=>battle.teamReady(room.battle,player.id,room.players)));
