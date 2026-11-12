@@ -1,0 +1,26 @@
+/* V4.2.1: compact, non-obstructive iPhone header and purpose-composed card artwork. */
+@media(max-width:700px){
+ .app{padding:calc(8px + env(safe-area-inset-top,0px)) 12px calc(20px + env(safe-area-inset-bottom,0px));max-width:100%;overflow-x:clip}
+ .top{position:relative!important;top:auto!important;z-index:2!important;display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:6px!important;padding:10px!important;border-radius:16px!important;box-shadow:0 4px 20px #0003!important;align-items:center!important}
+ .top .brand{grid-column:1/-1;flex:auto!important;width:100%;font-size:14px!important;line-height:1.1;padding:1px 3px 4px;min-width:0}
+ .top .brand small{font-size:8px!important;display:block;margin:2px 0 0!important}
+ .top .settings-trigger,.top .sound-toggle,.top .pause-any,.top .leave-any{width:100%!important;min-width:0!important;min-height:38px!important;max-height:42px!important;flex:initial!important;font-size:11px!important;line-height:1.05!important;white-space:normal!important;padding:8px 5px!important;border-radius:10px!important;overflow-wrap:anywhere}
+ .top .settings-trigger{grid-column:1;grid-row:2}
+ .top .sound-toggle{grid-column:2;grid-row:2}
+ .top .pause-any:not([hidden]){grid-column:3;grid-row:2}
+ .top .leave-any:not([hidden]){grid-column:3;grid-row:2}
+ .top .pause-any:not([hidden])~.leave-any:not([hidden]){grid-column:1/-1;grid-row:3;max-height:34px!important;min-height:34px!important}
+ .top .live{grid-column:1/-1!important;order:initial!important;text-align:left!important;font-size:10px!important;line-height:1!important;padding:1px 3px 3px!important;width:auto!important}
+ .gameview,.landing{padding-top:9px!important}
+ .mode-select{gap:10px!important;grid-template-columns:repeat(2,minmax(0,1fr))!important}
+ .mode-card{min-width:0!important;min-height:0!important;border-radius:16px!important;padding-bottom:13px!important;overflow:hidden!important;box-shadow:0 5px 14px #0003!important}
+ .mode-card .mode-art{height:auto!important;aspect-ratio: 1.64 / 1;object-fit:contain!important;object-position:center!important;mask-image:none!important;border:0!important;background:#0c1c27!important;margin:0 0 9px!important;filter:none!important}
+ .mode-card:before{display:none!important}
+ .mode-card strong{font-size:13px!important;line-height:1.22!important;padding:0 10px!important;word-break:normal}
+ .mode-card small{font-size:11px!important;line-height:1.4!important;padding:6px 10px 0!important}
+ .mode-card .new-chip{font-size:9px!important;vertical-align:middle}
+}
+@media(min-width:701px){
+ .mode-card .mode-art{object-fit:contain!important;mask-image:none!important;height:165px!important;background:#0c1c27!important}
+ .mode-card:before{display:none!important}
+}
