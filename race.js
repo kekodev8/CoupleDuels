@@ -48,7 +48,7 @@ function advance(race,now=Date.now()){
   if(now<p.hitUntil)velocity*=.45;if(now<p.turboUntil)velocity*=1.7;
   if(p.boost&&p.nitro>0){velocity*=1.8*ch.boost;p.nitro=Math.max(0,p.nitro-dt*31);}else p.nitro=Math.min(100,p.nitro+dt*11);
   p.speed=velocity;p.distance=Math.min(track.length,p.distance+velocity*dt);
-  for(const item of obs){if(!p.seen.includes(item.id)&&old<=item.distance&&p.distance>=item.distance-1.1&&Math.abs(p.x-item.x)<.28){p.seen.push(item.id);if(item.type==='box'){if(!p.item){p.item=ITEMS[Math.floor(Math.random()*ITEMS.length)];race.log=[`${p.name} opened a mystery box!`,...race.log].slice(0,6);}}else{if(p.shield)p.shield=false;else p.hitUntil=now+900;race.log=[`${p.name} hit an obstacle!`,...race.log].slice(0,6);}}}
+  for(const item of obs){if(!p.seen.includes(item.id)&&old<=item.distance&&p.distance>=item.distance-1.1&&Math.abs(p.x-item.x)<(item.type==='box'?.58:.29)){p.seen.push(item.id);if(item.type==='box'){if(!p.item){p.item=ITEMS[Math.floor(Math.random()*ITEMS.length)];race.log=[`${p.name} opened a mystery box!`,...race.log].slice(0,6);}}else{if(p.shield)p.shield=false;else p.hitUntil=now+900;race.log=[`${p.name} hit an obstacle!`,...race.log].slice(0,6);}}}
   if(p.distance>=track.length){p.finishAt=now;if(!race.winner)race.winner=p.id;}
  }
  race.tick++;

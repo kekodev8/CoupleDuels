@@ -1,3 +1,29 @@
+# CoupleDuels V4 — Graphite Arcade Edition
+
+## Upgrading your live CoupleDuels deployment
+
+Your existing GitHub repo runs from **`sip-happens`** (if you followed the prior Render setup). Copy the **contents** of this package's `sip-happens` directory into that existing folder and replace older files. Do not create `sip-happens/sip-happens`. Commit, then deploy latest commit on Render. `npm install` and `npm start` remain unchanged. Make sure `public/v4.css`, `public/manifest.webmanifest`, and the new `public/art/hero-*.webp` files are uploaded too.
+
+## V4 release notes
+
+- Rebuilt visual layer: deep graphite/teal app shell, compact sticky navigation, consistently spaced phone-first panels, distinct accent colors for every game mode.
+- Reworked mode selection to display full, uncropped illustrations (`object-fit: contain`) with mode-specific selection states. No more indiscriminate CSS cropping of art assets.
+- New standalone artwork files for the eight SipBattle hero/ally portraits. Character selection and battles now show image portraits instead of emoji avatars.
+- Create Story now changes background scene art by chapter, and maintains the existing 45-second turns / 4–6 exchanges per twist.
+- Kart Clash retains phone motion steering, five tracks and mystery-box power-ups, with a larger pickup collision lane to make boxes less frustrating to collect; track art displays fully; motion fallback remains available.
+- App manifest and install icon, so "Add to Home Screen" can display CoupleDuels as a standalone app window when the browser supports it. This is **not** an offline multiplayer game; a network connection is still required.
+- Preserves all eleven V3 game modes, multiplayer rooms, QR joining, pause, and rematch logic.
+
+## Scope and testing
+
+V4 is a visual/UI and interaction overhaul of the existing **2D browser game**. It is not a native app, 3D racing engine, or a full commercial studio production. Most existing gameplay logic is preserved deliberately to avoid destabilizing two-phone multiplayer. All existing unit tests pass locally; physical iPhone/Android sensor behavior and full UI playtests remain to be verified after deployment.
+
+## Start locally
+
+Run `npm install`, then `npm start` and open `http://localhost:3000`. For phone-to-phone play, deploy the Node service publicly with HTTPS.
+
+---
+
 # CoupleDuels — V2.4: Arcade Expansion
 
 A real-time browser game for two phones (Android + iPhone) with a private QR-code room.
