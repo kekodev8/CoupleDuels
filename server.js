@@ -10,6 +10,7 @@ const storyEngine=require('./story');
 const kart=require('./race');
 const mini=require('./minigames');
 const arcade=require('./arcade');
+const {hasCompletedGame,syncCompletion}=require('./completion');
 const {pauseRoom,resumeRoom}=require('./pause');
 const app=express();
 app.disable('x-powered-by');
@@ -34,6 +35,7 @@ function cleanName(value){return String(value||'Player').replace(/[<>\u0000-\u00
 function uid(){return crypto.randomBytes(18).toString('hex');}
 function findPlayer(room,token){return room.players.find(p=>p.token===token);}
 function snapshot(room,token){
+ syncCompletion(room);
  const you=findPlayer(room,token);
  const compat=room.mode==='compatibility';
  const isActive=room.phase==='playing'||room.phase==='reveal';
@@ -110,7 +112,7 @@ function schedule(room){
  room.timer=setTimeout(()=>{if(rooms.get(room.code)!==room)return;transition(room)},Math.max(0,room.deadline-Date.now()));
  room.timer.unref?.();
 }
-function broadcast(room){for(const p of room.players){if(p.socketId)io.to(p.socketId).emit('state',snapshot(room,p.token));}}
+function broadcast(room){syncCompletion(room);for(const p of room.players){if(p.socketId)io.to(p.socketId).emit('state',snapshot(room,p.token));}}
 function ackError(ack,error){if(typeof ack==='function')ack({ok:false,error});}
 function ackOK(ack,rest){if(typeof ack==='function')ack({ok:true,...rest});}
 function attach(socket,room,player){
@@ -207,7 +209,7 @@ io.on('connection',socket=>{
   ackOK(ack,{});
  });
  socket.on('arcade:answer',({answer}={},ack)=>{const {room,player}=current(socket);if(!room||!player||room.paused||room.phase!=='playing'||!room.arcade)return ackError(ack,'Game unavailable.');const error=arcade.answer(room.arcade,player.id,answer);if(error)return ackError(ack,error);room.updated=Date.now();broadcast(room);ackOK(ack,{});});
- socket.on('arcade:ready',(_,ack)=>{const {room,player}=current(socket);if(!room||!player||room.paused||room.phase!=='playing'||!room.arcade)return ackError(ack,'Game unavailable.');const error=arcade.ready(room.arcade,player.id);if(error)return ackError(ack,error);room.updated=Date.now();broadcast(room);ackOK(ack,{});});
+ socket.on('arcade:ready',(_,ack)=>{const {room,player}=current(socket);if(!room||!player||room.paused||room.phase!=='playing'||!room.arcade)return ackError(ack,'Game unavailable.');const error=arcade.ready(room.arcade,player.id);if(error)return ackError(ack,error);syncCompletion(room);room.updated=Date.now();broadcast(room);ackOK(ack,{});});
  socket.on('arcade:draw',(_,ack)=>{const {room,player}=current(socket);if(!room||!player||room.paused||room.phase!=='playing'||!room.arcade)return ackError(ack,'Game unavailable.');const error=arcade.draw(room.arcade,player.id);if(error)return ackError(ack,error);room.updated=Date.now();broadcast(room);ackOK(ack,{});});
  socket.on('mini:answer',({answer}={},ack)=>{
   const {room,player}=current(socket);
@@ -246,7 +248,7 @@ io.on('connection',socket=>{
  socket.on('restart',(_,ack)=>{
   const {room,player}=current(socket);
   if(!room||!player||player.id!==room.players[0].id)return ackError(ack,'Host only.');
-  if(room.phase!=='finished')return ackError(ack,'Finish the game first.');
+  if(!hasCompletedGame(room))return ackError(ack,'Finish the game first.');
   clearTimeout(room.timer);room.deadline=null;room.phase='lobby';room.paused=false;room.pausedAt=null;room.pausedBy=null;room.index=0;room.story=null;room.mini=null;room.arcade=null;room.race=null;room.battle=null;room.players.forEach(p=>{p.score=0;p.answer=null;p.ready=false});broadcast(room);ackOK(ack,{});
  });
  socket.on('leave',(_,ack)=>{
