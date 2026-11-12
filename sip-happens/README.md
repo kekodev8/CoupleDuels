@@ -102,3 +102,17 @@ In your GitHub `sip-happens` directory, add **race.js** and **race.test.js**; re
 Kart Clash now supports optional phone tilt steering in the browser. On iOS, tap **Enable Motion Steering** after starting a race to grant Safari motion access; permission requires HTTPS. On Android, allow sensor permissions if prompted. Orientation sensors may be unavailable in some browsers. Use the on-screen steering buttons as a fallback. Landscape orientation is recommended; orientation lock is controlled by phone/browser settings and cannot always be forced by the game.
 
 Drive over question-mark item boxes to collect one random item. Tap **Use Item** to activate Turbo Burst, Bubble Shield, Zap Bolt, Oil Slick, or Nitro Refill. The server validates items and applies effects. The original five tracks, eight modes, pause/resume, and game flow remain available. The art remains mostly procedural; the large image-asset redesign and three additional modes are **not part of this particular build**.
+
+## CoupleDuels V3.0 — Arcade & Art Update
+
+This build extends V2.5, preserving all existing game modes, Kart Clash motion steering and mystery-box items. New modes:
+
+- **Distorted Guess:** eight blurred original visual clues, untimed. Each correct answer scores two points; clues reveal once both players answer.
+- **Quick Draw Duel:** seven reaction heats. Both ready up, a randomized delay begins, and an early tap is a false start. Fastest valid tap wins the heat.
+- **Memory Heist:** six illustrated image-memory rounds. Both players ready up; the image is visible for 6.5 seconds then concealed for an untimed four-choice guess.
+
+Includes 26 original illustrated WebP assets extracted from artwork made for CoupleDuels. Lobby cards and racing map previews use image assets instead of emoji-only placeholders. The earlier eight games remain included; the browser lobby now offers eleven total modes.
+
+**Update existing deployment:** Replace the contents of the GitHub `sip-happens/` directory with the contents of this ZIP's `sip-happens/`, including `arcade.js`, `public/arcade-ui.js`, `public/arcade.css`, and `public/art/*.webp`. Keep your Render root directory as `sip-happens`, then deploy the latest commit. Never upload an extra nested `sip-happens/sip-happens` directory. Restart or create a new room after deployment and refresh both phones.
+
+**Validation:** Run `npm test`; ensure `npm install` and `npm start` work in your hosting environment. New modes have automated rules tests but still require physical two-phone UX testing. Some graphics remain Canvas-rendered (notably the racing road and kart), and the artwork layer is a polish pass rather than full 3D racing graphics.
