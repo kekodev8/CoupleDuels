@@ -142,3 +142,10 @@ Includes 26 original illustrated WebP assets extracted from artwork made for Cou
 **Update existing deployment:** Replace the contents of the GitHub `sip-happens/` directory with the contents of this ZIP's `sip-happens/`, including `arcade.js`, `public/arcade-ui.js`, `public/arcade.css`, and `public/art/*.webp`. Keep your Render root directory as `sip-happens`, then deploy the latest commit. Never upload an extra nested `sip-happens/sip-happens` directory. Restart or create a new room after deployment and refresh both phones.
 
 **Validation:** Run `npm test`; ensure `npm install` and `npm start` work in your hosting environment. New modes have automated rules tests but still require physical two-phone UX testing. Some graphics remain Canvas-rendered (notably the racing road and kart), and the artwork layer is a polish pass rather than full 3D racing graphics.
+
+
+## V4.1 — Per-device Settings
+
+Tap **⚙ Settings** from the top bar anywhere in the app. Choose **Auto**, **Phone** or **Computer** layout; toggle **Game sounds** and **Visual effects**. Settings are stored in each device's browser localStorage and do not affect the other player's settings. "Computer" mode on a small device still fits the available width. Kart Clash motion steering remains optional and controlled separately in that mode. The existing sound button remains a shortcut.
+
+Upload **public/settings.js**, **public/settings.css**, and the updated **public/index.html** to the deployed repo; no server changes or new environment variables are necessary.
