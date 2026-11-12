@@ -149,3 +149,13 @@ Includes 26 original illustrated WebP assets extracted from artwork made for Cou
 Tap **⚙ Settings** from the top bar anywhere in the app. Choose **Auto**, **Phone** or **Computer** layout; toggle **Game sounds** and **Visual effects**. Settings are stored in each device's browser localStorage and do not affect the other player's settings. "Computer" mode on a small device still fits the available width. Kart Clash motion steering remains optional and controlled separately in that mode. The existing sound button remains a shortcut.
 
 Upload **public/settings.js**, **public/settings.css**, and the updated **public/index.html** to the deployed repo; no server changes or new environment variables are necessary.
+
+## V4.1.2 host phone mode-selection fix
+
+- This release deliberately retains host-only game selection. It **does not** include the proposed V4.1.1 permission change.
+- The lobby mode cards use a stable delegated click handler that works when tapping card artwork, titles, or empty card space.
+- A status line shows the currently selected mode and whether the server accepted the change.
+- The `index.html` references to `app.js` and `v4.css` have versioned URLs to reduce stale mobile-browser caching.
+- If your phone still cannot switch modes, confirm it says **Host** beside your player name and the currently selected mode message. If it does not, the host session is open on a different browser/device; create a fresh room on the phone you want as host.
+
+Replace `public/app.js`, `public/v4.css`, `public/index.html` in the **main repository public folder**, commit, let Render redeploy, then make a new room on the host phone.

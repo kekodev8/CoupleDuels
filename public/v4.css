@@ -42,3 +42,10 @@ body[data-mode="story"][data-chapter="4"] .story-illustration{background-image:u
 body[data-mode="story"][data-chapter="5"] .story-illustration{background-image:url('/art/couple.webp')}
 /* Landscape-only controls remain part of Kart Clash; other games stay portrait friendly. */
 @media (orientation:landscape) and (max-height:660px){body[data-mode="race"] .top{position:static}body[data-mode="race"] .gameview{padding-top:5px}body[data-mode="race"] #raceCanvas{max-height:55vh}body[data-mode="race"] .race-control{min-height:42px}body[data-mode="race"] .race-hud{padding:7px 12px}}
+
+/* V4.1.2 mode picker touch stability and confirmation. */
+.mode-select-status{grid-column:1/-1;background:#142d31;border:1px solid #396c63;border-radius:12px;padding:11px 13px;color:#baf3df;font-size:12px;font-weight:750;line-height:1.5}
+.mode-card{touch-action:manipulation;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.mode-card .mode-art,.mode-card strong,.mode-card small,.mode-card .new-chip{pointer-events:none}
+.mode-card:active:not(:disabled){transform:scale(.985);filter:brightness(1.08)}
+.mode-card:focus-visible{outline:3px solid var(--tile);outline-offset:3px}
