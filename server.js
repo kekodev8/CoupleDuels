@@ -59,7 +59,7 @@ function snapshot(room,token){
    breakdown:room.compat.guessIndices.map((qi,order)=>({question:room.compat.questions[qi].title,
     choices:room.compat.questions[qi].choices,players:room.players.map(p=>({id:p.id,name:p.name,selfAnswer:room.compat.selfAnswers[p.id][qi],guess:room.compat.guessAnswers[p.id][order],partnerAnswer:room.compat.selfAnswers[room.players.find(other=>other.id!==p.id).id][qi]}))}))};
  }
- return {arcade:room.arcade?arcade.publicState(room.arcade):null,mini:room.mini?mini.publicMini(room.mini):null,race:room.mode==='race'&&room.race?kart.publicRace(room.race):null,story:room.mode==='story'&&room.story?storyEngine.publicStory(room.story,room.players):null,battle:room.mode==='sipbattle'&&room.battle?battle.publicBattle(room.battle,room.players):null,code:room.code,mode:room.mode,phase:room.phase,paused:!!room.paused,pausedBy:room.pausedBy||null,players:room.players.map(p=>({id:p.id,name:p.name,connected:!!p.socketId,score:p.score,answered:isActive?!!(p.answer!==null):undefined})),youId:you?.id,hostId:room.players[0]?.id,roundIndex:room.index,deadline:room.deadline||null,round,reveal,summary};
+ return {arcade:room.arcade?arcade.publicState(room.arcade):null,mini:room.mini?mini.publicMini(room.mini):null,race:room.mode==='race'&&room.race?kart.publicRace(room.race):null,story:room.mode==='story'&&room.story?storyEngine.publicStory(room.story,room.players):null,battle:room.mode==='sipbattle'&&room.battle?battle.publicBattle(room.battle,room.players):null,code:room.code,mode:room.mode,phase:room.phase,paused:!!room.paused,pausedBy:room.pausedBy||null,players:room.players.map(p=>({id:p.id,name:p.name,connected:!!p.socketId,score:p.score,ready:!!p.ready,answered:isActive?!!(p.answer!==null):undefined})),youId:you?.id,hostId:room.players[0]?.id,roundIndex:room.index,deadline:room.deadline||null,round,reveal,summary};
 }
 function transition(room){
  if(room.paused)return;
@@ -80,7 +80,7 @@ function transition(room){
       room.compat.matches++;room.compat.correct[p.id]++;p.score+=1;
      }
     }
-    room.phase='reveal';room.deadline=Date.now()+5000;
+    room.phase='reveal';room.deadline=null;room.players.forEach(p=>p.ready=false);
    }
   }else{
    const round=room.rapidRounds[room.index];
@@ -93,7 +93,7 @@ function transition(room){
      if(votes[0]===votes[1])room.players.forEach(p=>p.score+=2);
     }
    }
-   room.phase='reveal';room.deadline=Date.now()+3500;
+   room.phase='reveal';room.deadline=null;room.players.forEach(p=>p.ready=false);
   }
  }else if(room.phase==='reveal'){
   room.index++;
@@ -197,6 +197,14 @@ io.on('connection',socket=>{
   player.answer=answer;room.updated=Date.now();
   if(room.players.every(p=>p.answer!==null)){transition(room);ackOK(ack,{});return;}
   broadcast(room);ackOK(ack,{});
+ });
+ socket.on('reveal:ready',(_,ack)=>{
+  const {room,player}=current(socket);
+  if(!room||!player||room.paused||room.phase!=='reveal'||!['rapid','compatibility'].includes(room.mode))return ackError(ack,'Nothing to confirm.');
+  player.ready=true;
+  if(room.players.every(p=>p.ready))transition(room);
+  else{room.updated=Date.now();broadcast(room);}
+  ackOK(ack,{});
  });
  socket.on('arcade:answer',({answer}={},ack)=>{const {room,player}=current(socket);if(!room||!player||room.paused||room.phase!=='playing'||!room.arcade)return ackError(ack,'Game unavailable.');const error=arcade.answer(room.arcade,player.id,answer);if(error)return ackError(ack,error);room.updated=Date.now();broadcast(room);ackOK(ack,{});});
  socket.on('arcade:ready',(_,ack)=>{const {room,player}=current(socket);if(!room||!player||room.paused||room.phase!=='playing'||!room.arcade)return ackError(ack,'Game unavailable.');const error=arcade.ready(room.arcade,player.id);if(error)return ackError(ack,error);room.updated=Date.now();broadcast(room);ackOK(ack,{});});

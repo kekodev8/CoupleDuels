@@ -5,15 +5,42 @@ const MELD=[
  ['Perfect midnight snack?',['Pizza','Cereal','Ice cream','Fries']],['Pick a superpower',['Teleport','Fly','Invisibility','Mind reading']],['Weekend escape?',['Mountains','Beach','Big city','Cabin']],['Your duo as an animal?',['Otters','Cats','Wolves','Penguins']],['A mystery box contains…',['Money','Puppy','Ancient key','Confetti']],['Who drives the getaway car?',['A robot','A grandma','An alien','A raccoon']],['Choose a ridiculous pet',['Tiny dragon','Disco frog','Ghost hamster','Talking fish']],['Movie genre tonight?',['Horror','Comedy','Action','Romance']],['Choose one forever',['Tacos','Burgers','Pasta','Sushi']],['Your secret base?',['Treehouse','Submarine','Moon','Volcano']],['Perfect weather?',['Snowy','Sunny','Rainy','Stormy']],['Time travel to…',['1990s','Middle ages','Future','Dinosaurs']],['Pick a costume',['Pirate','Wizard','Astronaut','Vampire']],['What would you save?',['Phone','Snacks','Pet','Blanket']]
 ].map(([title,choices])=>({title,choices}));
 const EMOJI=[
- ['🦁👑','The Lion King','Lion Kingdom','Jungle Book','Animal Planet'],['🕷️🧑','Spider-Man','Ant-Man','The Fly','Batman'],['🧊👸','Frozen','Ice Queen','Winter Wonderland','Snow White'],['🚢🧊💔','Titanic','Pirates','Ice Age','Cruise Control'],['👻🏠','Haunted house','Ghost town','Scary movie','Spirit world'],['🍕🐢🥷','Teenage Mutant Ninja Turtles','Pizza Party','Kung Fu Panda','Super Mario'],['🐟🔎','Finding Nemo','Jaws','Shark Tale','The Little Mermaid'],['🧙‍♂️💍','The Lord of the Rings','Harry Potter','The Hobbit','Magic Mike'],['🌧️🐈🐕','Raining cats and dogs','Dog days','Pet parade','Storm chasers'],['🍎📱','Apple iPhone','Fruit Ninja','Smart snack','Phone call'],['🦖🌳🚙','Jurassic Park','Dinosaur Train','Forest Gump','Night Safari'],['🚀🌙','Moon landing','Star Wars','Moonlight','Space Jam'],['🐝🍯','Honey bee','Bee Movie','Sweet tooth','Winnie the Pooh'],['🕶️💊💻','The Matrix','Cyberpunk','Hackers','Men in Black'],['👑🪑⚔️','Game of Thrones','Chess master','King Arthur','Royal rumble'],['🧟‍♂️🏃','Zombie apocalypse','The Walking Dead','World War Z','Night Run']
+ ['🌊🚣‍♀️🐓','Moana','Frozen','Encanto','Zootopia'],
+ ['🧊👸❄️','Frozen','Tangled','Wish','Inside Out'],
+ ['🦁👑🌅','The Lion King','Zootopia','Brother Bear','Madagascar'],
+ ['🧠😊😡😢','Inside Out','Soul','Turning Red','Coco'],
+ ['🦊🐰🚔','Zootopia','Robin Hood','Fantastic Mr. Fox','Sing'],
+ ['🌺👽🏄','Lilo & Stitch','Moana','Encanto','Big Hero 6'],
+ ['🏠🕯️🦋','Encanto','Up','Coco','Tangled'],
+ ['🎈🏠👴','Up','Encanto','Toy Story','Monsters Inc.'],
+ ['⏰🐶🎮','Regular Show','Adventure Time','Ben 10','We Bare Bears'],
+ ['🐻🐼🐻‍❄️','We Bare Bears','Care Bears','Gumball','Gravity Falls'],
+ ['🧒⏱️👽','Ben 10','Generator Rex','Adventure Time','Dexter'],
+ ['🍬⚔️🐶','Adventure Time','Regular Show','Gumball','Chowder'],
+ ['🐱🐟🏫','The Amazing World of Gumball','CatDog','Tom and Jerry','Clarence'],
+ ['🦸‍♂️🦸‍♀️🍕','Teen Titans Go!','The Incredibles','Powerpuff Girls','Justice League'],
+ ['🩷💙💚👊','The Powerpuff Girls','Teen Titans Go!','Steven Universe','Gumball'],
+ ['🧪👴🚀','Rick and Morty','Futurama','Solar Opposites','The Simpsons'],
+ ['😀🤝🐸','Smiling Friends','Rick and Morty','Robot Chicken','Bob’s Burgers'],
+ ['🍟🥤🧇','Aqua Teen Hunger Force','Regular Show','Family Guy','Smiling Friends'],
+ ['🐔🤖📺','Robot Chicken','Aqua Teen Hunger Force','Futurama','Ben 10'],
+ ['🎸💀🔥','Metalocalypse','Regular Show','Smiling Friends','Rick and Morty'],
+ ['🚗🏁🏎️','Cars','Wreck-It Ralph','Toy Story','Up'],
+ ['🐠🔎🌊','Finding Nemo','The Little Mermaid','Moana','Shark Tale'],
+ ['🥋🐼🍜','Kung Fu Panda','Mulan','Turning Red','Ratatouille'],
+ ['🍝🐀👨‍🍳','Ratatouille','Encanto','Cloudy with a Chance of Meatballs','Coco'],
+ ['🧛‍♂️🦇🏨','Hotel Transylvania','Coco','The Nightmare Before Christmas','Coraline']
 ].map(([emoji,correct,...wrong])=>{const choices=shuffle([correct,...wrong]);return {title:emoji,choices,correct:choices.indexOf(correct)};});
 function make(mode,players){return {mode,stage:mode==='tapduel'?'ready':'question',index:0,total:mode==='emojirush'?8:mode==='mindmeld'?7:5,questions:shuffle(mode==='emojirush'?EMOJI:MELD).slice(0,mode==='emojirush'?8:7),players:players.map(p=>({id:p.id,name:p.name,score:0,answer:null,ready:false,taps:0,lastTap:0})),deadline:null,results:null,winner:null,heatStarts:0};}
 function publicMini(g){const q=g.stage==='question'||g.stage==='reveal'?g.questions[g.index]:null;return {mode:g.mode,stage:g.stage,index:g.index,total:g.total,question:q?{title:q.title,choices:q.choices}:null,players:g.players.map(p=>({id:p.id,name:p.name,score:p.score,answered:p.answer!==null,ready:p.ready,taps:p.taps})),results:g.results,deadline:g.deadline,winner:g.winner};}
-function answer(g,id,value){if(g.stage!=='question')return 'Not accepting answers.';const p=g.players.find(p=>p.id===id),q=g.questions[g.index];if(!p||p.answer!==null)return 'Already answered.';if(!Number.isInteger(value)||value<0||value>=q.choices.length)return 'Invalid answer.';p.answer=value;if(g.players.every(p=>p.answer!==null)){if(g.mode==='emojirush')g.players.forEach(p=>{if(p.answer===q.correct)p.score+=1;});else if(g.players[0].answer===g.players[1].answer)g.players.forEach(p=>p.score+=2);g.results={answers:g.players.map(p=>({id:p.id,name:p.name,answer:p.answer,correct:g.mode==='emojirush'?p.answer===q.correct:null})),correct:g.mode==='emojirush'?q.correct:null,match:g.mode==='mindmeld'&&g.players[0].answer===g.players[1].answer};g.stage='reveal';g.deadline=Date.now()+3300;}return null;}
-function ready(g,id,now=Date.now()){if(g.mode!=='tapduel'||g.stage!=='ready')return 'Not ready for the heat.';const p=g.players.find(p=>p.id===id);if(!p)return 'Not in game.';p.ready=true;if(g.players.every(p=>p.ready)){g.stage='countdown';g.deadline=now+2500;g.players.forEach(p=>{p.taps=0;p.lastTap=0;});}return null;}
+function answer(g,id,value){if(g.stage!=='question')return 'Not accepting answers.';const p=g.players.find(p=>p.id===id),q=g.questions[g.index];if(!p||p.answer!==null)return 'Already answered.';if(!Number.isInteger(value)||value<0||value>=q.choices.length)return 'Invalid answer.';p.answer=value;if(g.players.every(p=>p.answer!==null)){if(g.mode==='emojirush')g.players.forEach(p=>{if(p.answer===q.correct)p.score+=1;});else if(g.players[0].answer===g.players[1].answer)g.players.forEach(p=>p.score+=2);g.results={answers:g.players.map(p=>({id:p.id,name:p.name,answer:p.answer,correct:g.mode==='emojirush'?p.answer===q.correct:null})),correct:g.mode==='emojirush'?q.correct:null,match:g.mode==='mindmeld'&&g.players[0].answer===g.players[1].answer};g.stage='reveal';g.deadline=null;g.players.forEach(p=>p.ready=false);}return null;}
+function ready(g,id,now=Date.now()){if(g.stage==='reveal'&&g.mode!=='tapduel'){const p=g.players.find(p=>p.id===id);if(!p)return 'Not in game.';p.ready=true;if(g.players.every(p=>p.ready))nextRound(g);return null;}
+ if(g.mode!=='tapduel'||g.stage!=='ready')return 'Not ready for the heat.';const p=g.players.find(p=>p.id===id);if(!p)return 'Not in game.';p.ready=true;if(g.players.every(p=>p.ready)){g.stage='countdown';g.deadline=now+2500;g.players.forEach(p=>{p.taps=0;p.lastTap=0;});}return null;}
 function tap(g,id,now=Date.now()){if(g.mode!=='tapduel'||g.stage!=='tapping'||now>=g.deadline)return 'Wait for the signal.';const p=g.players.find(p=>p.id===id);if(!p)return 'Not in game.';if(now-p.lastTap<90)return null;p.lastTap=now;p.taps=Math.min(80,p.taps+1);return null;}
 function tick(g,now=Date.now()){if(!g.deadline||now<g.deadline)return false;if(g.mode==='tapduel'){
  if(g.stage==='countdown'){g.stage='tapping';g.deadline=now+8000;g.heatStarts=now;return true;}
  if(g.stage==='tapping'){const [a,b]=g.players;if(a.taps>b.taps)a.score++;else if(b.taps>a.taps)b.score++;g.results={taps:g.players.map(p=>({id:p.id,name:p.name,taps:p.taps}))};g.stage='reveal';g.deadline=now+3600;return true;}
- }if(g.stage==='reveal'){g.index++;g.deadline=null;g.results=null;if(g.index>=g.total){g.stage='finished';const [a,b]=g.players;g.winner=a.score===b.score?null:(a.score>b.score?a.id:b.id);}else if(g.mode==='tapduel'){g.stage='ready';g.players.forEach(p=>p.ready=false);}else{g.stage='question';g.players.forEach(p=>p.answer=null);}return true;}return false;}
+ }if(g.stage==='reveal'&&g.mode==='tapduel'){nextRound(g);return true;}return false;}
+function nextRound(g){g.index++;g.deadline=null;g.results=null;
+ if(g.index>=g.total){g.stage='finished';const [a,b]=g.players;g.winner=a.score===b.score?null:(a.score>b.score?a.id:b.id);}else if(g.mode==='tapduel'){g.stage='ready';g.players.forEach(p=>p.ready=false);}else{g.stage='question';g.players.forEach(p=>{p.answer=null;p.ready=false;});}}
 module.exports={MELD,EMOJI,make,publicMini,answer,ready,tap,tick};

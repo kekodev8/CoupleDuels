@@ -1,3 +1,30 @@
+# CoupleDuels V4.2 — Pop Culture & Shared Reveals
+
+## Install / deploy
+
+This ZIP contains a `sip-happens` folder. On GitHub, your current repository has `server.js` and `package.json` in its **root**, so upload the **contents** of the ZIP's `sip-happens` folder into the repository root, replacing existing files (including all `public/` files). Do not upload a nested folder named `sip-happens` unless you deliberately configure Render's Root Directory to that folder.
+
+Render: Root Directory **blank**, build `npm install`, start `npm start`, branch `main`. After a successful deploy, open a **fresh room** on each phone and refresh the page. V4.2 uses cache-busted frontend filenames in `public/index.html`.
+
+## What changed
+
+- Distorted Guess: 8 random recognizable movie/cartoon puzzles selected from a pool of Disney, Cartoon Network and Adult Swim titles, now displaying **Wikipedia article thumbnail photos/artwork** retrieved on demand instead of reusing the game's bundled poster images. Mixed answer choices emphasize same-category decoys. Image is obscured until both choose, then both answers are revealed.
+- Memory Heist: 8 rounds, larger mixed pool including media and everyday objects (mop, sponge, books, pencils, etc.). Preview times decrease: **4.2 / 3.5 / 3 / 2.6 / 2.2 / 1.9 / 1.6 / 1.3 seconds**. The next image thumbnail is preloaded during the Ready screen when possible.
+- Mind Meld, Emoji Rush, Rapid-Fire Chaos, Couples Compatibility prediction rounds, Distorted Guess and Memory Heist: Both players get symmetrical reveal feedback. Neither is forced forward after a few seconds: the reveal remains until **both press Ready**.
+- Compatibility: Phase 1 original answers still stay hidden until the guessing phase so the game cannot be spoiled. Guess reveals explicitly show both players' original answers and both predictions.
+- Emoji Rush: refreshed animated movie, Cartoon Network and Adult Swim clues including recent recognizable titles.
+- Lobby cards: updated focal cropping and overlay gradients for text legibility.
+
+### Important image availability and rights note
+
+Media images are **not bundled or copied** into this ZIP. When an image game runs, the browser queries Wikipedia's public `pageimages` endpoint (`https://en.wikipedia.org/w/api.php`) and loads the article thumbnail on each device. An internet connection to Wikipedia is required **in addition to** your Render game connection. Some articles may lack a thumbnail or a mobile network may block or delay Wikipedia; the game displays an unavailable-image message in this case. This integration has not been tested on two physical phones. Thumbnail copyright and licenses belong to their respective rights-holders, not CoupleDuels. Do not redistribute thumbnails without checking the rights for each image.
+
+## Testing
+
+The included Node.js suite: `npm test` — 35 tests passing locally including new tests for reveal timing, media pools and difficulty progression. Full two-phone network/image-loading test still required.
+
+---
+
 # CoupleDuels V4 — Graphite Arcade Edition
 
 ## Upgrading your live CoupleDuels deployment
