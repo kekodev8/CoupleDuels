@@ -186,3 +186,11 @@ Upload **public/settings.js**, **public/settings.css**, and the updated **public
 - If your phone still cannot switch modes, confirm it says **Host** beside your player name and the currently selected mode message. If it does not, the host session is open on a different browser/device; create a fresh room on the phone you want as host.
 
 Replace `public/app.js`, `public/v4.css`, `public/index.html` in the **main repository public folder**, commit, let Render redeploy, then make a new room on the host phone.
+
+
+## V4.2.1 — iPhone visual fixes
+- Header is compact and non-sticky on small screens; it will not cover the games as you scroll.
+- All 11 game cards now use dedicated, curated crops from the existing assets (no multicolumn promo collage fragments).
+- Mode titles and descriptions remain outside the imagery.
+- Works with existing GitHub + Render deployment, root directory blank.
+- On GitHub upload the complete contents of `sip-happens`, including `public/mobile421.css` and `public/art/card-*.webp`.
