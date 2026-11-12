@@ -1,22 +1,53 @@
 
-// Display article thumbnail images from Wikipedia at play time; no copyrighted promo art is bundled.
-// Origin files and licensing remain with their publishers. A source link is shown when available.
+// Display article thumbnail images from Wikipedia/Wikimedia at play time.
+// We try two public Wikipedia endpoints and fall back gracefully if no picture is available.
 const wikiArtworkCache=new Map();
 function wikiThumbnail(page){
  if(!wikiArtworkCache.has(page)){
-  const url='https://en.wikipedia.org/w/api.php?'+new URLSearchParams({action:'query',prop:'pageimages',format:'json',formatversion:'2',piprop:'thumbnail',pithumbsize:'900',titles:page,origin:'*'});
-  wikiArtworkCache.set(page,fetch(url).then(r=>{if(!r.ok)throw Error('image service unavailable');return r.json()}).then(j=>j.query?.pages?.[0]?.thumbnail?.source||null).then(url=>{if(url){const image=new Image();image.src=url;}return url;}).catch(()=>null));
+  const summaryUrl='https://en.wikipedia.org/api/rest_v1/page/summary/'+encodeURIComponent(page);
+  const queryUrl='https://en.wikipedia.org/w/api.php?'+new URLSearchParams({action:'query',prop:'pageimages',format:'json',formatversion:'2',piprop:'thumbnail',pithumbsize:'900',titles:page,origin:'*'});
+  const task=(async()=>{
+   try{
+    const s=await fetch(summaryUrl,{headers:{accept:'application/json'}});
+    if(s.ok){
+     const j=await s.json();
+     const hit=j?.thumbnail?.source||null;
+     if(hit)return hit;
+    }
+   }catch{}
+   try{
+    const q=await fetch(queryUrl);
+    if(q.ok){
+     const j=await q.json();
+     const hit=j.query?.pages?.[0]?.thumbnail?.source||null;
+     if(hit)return hit;
+    }
+   }catch{}
+   return null;
+  })().then(url=>{if(url){const image=new Image();image.src=url;}return url;});
+  wikiArtworkCache.set(page,task);
  }
  return wikiArtworkCache.get(page);
 }
 async function hydrateWikiImages(){
- const nodes=[...document.querySelectorAll('img[data-wiki-page]')];
+ const nodes=[...document.querySelectorAll('.wiki-frame img[data-wiki-page]')];
  for(const img of nodes){
   const page=img.dataset.wikiPage;if(!page)continue;
+  const frame=img.closest('.wiki-frame');
+  frame?.classList.remove('wiki-unavailable','wiki-loaded');
+  frame?.classList.add('wiki-loading');
   const result=await wikiThumbnail(page);
   if(img.isConnected&&img.dataset.wikiPage===page){
-   if(result){img.src=result;img.style.display='block';img.onerror=()=>{img.style.display='none';img.parentElement?.classList.add('wiki-unavailable')};}
-   else{img.style.display='none';img.parentElement?.classList.add('wiki-unavailable');}
+   if(result){
+    img.onload=()=>{frame?.classList.remove('wiki-loading');frame?.classList.add('wiki-loaded');img.style.display='block';};
+    img.onerror=()=>{img.style.display='none';frame?.classList.remove('wiki-loading');frame?.classList.add('wiki-unavailable');};
+    img.src=result;
+    if(img.complete) img.onload();
+   } else {
+    img.style.display='none';
+    frame?.classList.remove('wiki-loading');
+    frame?.classList.add('wiki-unavailable');
+   }
   }
  }
 }

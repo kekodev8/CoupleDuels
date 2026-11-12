@@ -2,7 +2,7 @@
 function publicWikiArt(q,extra=''){
  const name=String(q?.imagePage||'');
  const attr=safe(name);const category=safe(q?.category||'Pop culture');
- return `<div class="wiki-frame ${extra}"><span class="wiki-placeholder">Loading real image…</span><img data-wiki-page="${attr}" alt="${category} visual puzzle" style="display:none"><small class="wiki-credit">Image via Wikipedia · ${category}</small></div>`;
+ return `<div class="wiki-frame wiki-loading ${extra}"><span class="wiki-placeholder loading">Loading image…</span><span class="wiki-placeholder unavailable">Image unavailable for this round.</span><img data-wiki-page="${attr}" alt="${category} visual puzzle" style="display:none"><small class="wiki-credit">Image source · Wikipedia / Wikimedia Commons · ${category}</small></div>`;
 }
 function arcadeArt(name){return '/art/'+name+'.webp'}
 function renderArcade(){
