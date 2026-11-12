@@ -1,87 +1,118 @@
-# SIP HAPPENS — Couples Edition
+# CoupleDuels — V2.4: Arcade Expansion
 
-A playable 2-player browser party game with **real-time Socket.IO syncing**, a QR-code invite, 15 rounds, shared scoring, and three mild progression stages. Android and iPhone can play together.
+A real-time browser game for two phones (Android + iPhone) with a private QR-code room.
 
-## Features
-- Host creates a private 6-character room code.
-- Second player scans a QR or enters the code. No accounts.
-- Each device sees the round simultaneously and submits its own answer.
-- Answers stay hidden until both players respond.
-- 3 game types: secret votes, mind-matching, and co-op challenges.
-- 15 rapid-fire rounds, 3 stages (warmup / playful / chaos), live scores and finale.
-- Reconnects when a phone refreshes or loses connection (same browser).
-- Optional sips only; drinking is never required.
+## Game modes
 
-## Run locally
-Install Node.js 20+.
+- **Rapid-Fire Chaos:** 20 untimed cards: four chapters, each with 4 random questions followed by 1 acting/challenge prompt, sampled from a 90-card bank. Acting challenges advance after both players press Done. Recent prompts are avoided during rematches in the same room.
+- **Couples Compatibility:** both players privately answer the same 10 randomly selected questions from a 50-question bank, then each predicts the partner's previous answer on 5 questions. Combined match percentage is shown after the game.
+- **SipBattle:** select yourself + 2 of 7 allies, claim up to 5 upgrade points (no drinking required), buy character upgrades and fight turn-by-turn. Two new allies: Arrow (piercing shot) and Luna (moonlight shield).
+- **Create Story:** spoken cooperative storytelling with **five chapters**, with 4–6 exchanges per chapter and 45-second speaking turns. After each chapter, an unexpected story twist is shown **without a timer**, and both players press Ready to continue. The fifth twist is a randomized ending prompt. Player 1 begins the ending and Player 2 finishes it. No scores, winner or loser. No audio recording or story transcription; speak aloud together.
+
+## New modes in V2.4
+
+- **Mind Meld:** 7 rounds. Both choose secretly from 4 options and score 2 points each for matching choices. No question timers.
+- **Emoji Rush:** 8 emoji puzzles; independently guess the correct phrase, movie, or idea from four choices. Each correct answer earns 1 point. No question timers.
+- **Tap Duel:** 5 simultaneous eight-second heats. Both players tap on their own phones; most valid taps wins 1 point. A 2.5-second countdown starts after both tap Ready, and the server rate-limits taps to protect against impossible input speeds. Shared Pause freezes the heat countdown.
+- **Kart Clash visual upgrade:** the same tested 2D racing engine now has vector-drawn multi-layer roads, richer map-specific scenery, detailed karts, obstacle glows, checkered finish markers, and enhanced HUD. It is still a 2D arcade racer, not full 3D.
+
+## Important updating instructions
+
+Your Render service should still use **Root Directory `sip-happens`** if you uploaded your game beneath that GitHub folder. Do not put a new `sip-happens` folder inside the existing one. Upload the *contents* of the new `sip-happens/` folder in the ZIP to `CoupleDuels/sip-happens/` on GitHub, **replacing** existing files (especially `server.js`, `game.js`, `public/app.js`, `public/index.html`, `public/style.css`, `rapid.test.js`, and `pause.js`) and **adding** `minigames.js` and `minigames.test.js`. Then commit and check the Render deployment logs, refresh both phones, and create a new room.
+
+Because past updates sometimes landed in the wrong GitHub folder, verify that the deployed directory contains `minigames.js` beside `server.js`. `package.json` must be in that same directory. The service needs `npm install` and `npm start`.
+
+## Shared Pause / Resume
+
+Either player can tap **⏸ Pause** during an active game or results reveal. Both phones show a full-screen break overlay. **▶ Resume together** is available to either player. On pause, all game actions are temporarily blocked and the server freezes the story countdown, reveal timer, and Kart Clash simulation (including boost, obstacle delays, and the starting countdown). Rapid-Fire and Compatibility questions remain untimed. The current party and scores are preserved. Leaving the party is still a separate action.
+
+## New design / sound
+
+Mobile-first cards, large touch-friendly controls, illustrated SVG scene cards, colorful character selection, smoother reveals, HP bars, progress indicators and status chips. A Sound On/Off control plays small locally synthesized sounds for right predictions/matches, SipBattle actions and victory/defeat, and story transitions. There are no downloaded audio assets and no user audio collection. Because browsers restrict autoplay, sound starts after you tap Sound On.
+
+## Deploy to your existing Render service
+
+Your previous setup used **Root Directory: `sip-happens`**, so keep that setting if your project is in `CoupleDuels/sip-happens` on GitHub.
+
+1. Extract this ZIP. It contains one folder named `sip-happens`.
+2. In GitHub, open `CoupleDuels/sip-happens` and upload the **contents** of the extracted `sip-happens` folder there. Do not accidentally create `sip-happens/sip-happens`.
+3. Critical updated files are `server.js`, `public/app.js`, `public/index.html`, `public/style.css`; **new** files are `pause.js` and `pause.test.js`.
+4. Commit the files to `main`. Render redeploys automatically if enabled; otherwise use Manual Deploy → Deploy latest commit.
+5. When Render reports Live, refresh the game on **both phones** and create a new room to test the pause feature.
+
+Render settings: Node, Root Directory `sip-happens` for the nested GitHub structure above, Build `npm install`, Start `npm start`. If you instead store the project files at repository root, leave Root Directory blank.
+
+## Local development
+
+Requires Node.js 20+:
 
 ```bash
 npm install
 npm start
 ```
 
-Then open `http://localhost:3000` on the host computer. To test two players locally, open two tabs (use a private/incognito tab for the second player so their token is separate).
+Open <http://localhost:3000>. Open a second tab to simulate another player; a public HTTPS deployment is required for normal phone QR joining outside your local device.
 
-## Make it work on both phones (recommended)
+## Run automated checks
 
-Deploy this folder as a **Node.js web service** on Render, Railway, or another Node host. With Render:
-1. Upload this project to a GitHub repository.
-2. On Render, choose **New → Web Service**, connect the repo, choose Node, use `npm install` and `npm start` (or deploy using `render.yaml`).
-3. Open the resulting public `https://...` address on your first phone. Create a room.
-4. Have your partner scan the on-screen QR with their iPhone/Android camera. Once both players are connected, tap **Start**.
+```bash
+npm test
+node --check server.js
+node --check public/app.js
+```
 
-**Important:** `localhost` and `127.0.0.1` links only work on your own device, not your partner's phone. QR joining across both phones requires a public HTTPS deployment or an appropriate LAN-accessible host URL. This application stores rooms only in server memory, so use one server instance; restarts reset rooms. No permanent database or login is needed for this MVP.
+## Notes
 
-## Gameplay & scoring
-- **Match:** both independently pick the same choice → +2 each.
-- **Vote:** both choose the same actual person, taking their player-relative options into account → +2 each.
-- **Challenge:** both tap DONE → +1 each.
-- No countdowns on questions or challenges: both players answer (or tap DONE) to proceed.
-- After both players finish, the answer reveal lasts 3.5 seconds, then the next round starts. Questions never expire.
-- The pace never requires alcohol consumption; nonalcoholic drinks are always welcome.
+- All game rooms are in memory and reset after a server restart; there is no account or database.
+- Sound is optional and can be muted any time. No microphone permissions are needed for Create Story; it is a spoken, in-person game, not voice chat.
+- **Drinking is optional**. No upgrade points or gameplay outcomes depend on consuming alcohol; choose water or nonalcoholic drinks instead. Never pressure anyone to drink.
+- Logic tests pass; real two-phone network and audio interactions should still be tested on the deployed site.
 
-## Dev notes / next enhancements
-Add packs and question editor, accessibility settings, optional safe drinking-rule toggle, persistent rooms, sound effects, and a spectator mode. For scaling to multiple instances, replace the in-memory room map with Redis and use a compatible Socket.IO adapter.
+## Create Story pacing (V2.1)
 
-## New mode: 💘 Couples Compatibility
+- Five chapters, with **4–6 full two-player exchanges per chapter** (8–12 speaking turns before each plot twist).
+- **45 seconds per player turn**, with an optional Done Speaking button for early finishes.
+- Plot-twist cards are **untimed** until both players press Ready.
+- After the fifth chapter, the final prompt is also untimed; each player gets one 45-second ending turn.
+- No score or winner.
 
-Select **Couples Compatibility** in the room lobby before pressing Start. The host picks the mode, and both phones update together.
+The server handles chapter lengths and timing; upload all files, including `story.js`, `story.test.js`, and `public/app.js`, preserving the folder structure.
 
-**Phase 1 — 10 questions about yourselves:** Each person gets the same 10 randomly selected prompts from a 30-question bank and privately chooses one of four answers. There is no countdown; both players have as long as they need. Answers are never sent to the other phone during this phase, so neither player can copy the partner's response. Questions advance when both players answer.
 
-**Phase 2 — 5 questions about your partner:** The game randomly selects 5 of the *same* original questions. Each person predicts the answer their partner gave. Both guess independently without a timer. A five-second synchronized reveal then displays each real answer and each guess.
+## CoupleDuels V2.2 — Kart Clash (new fifth mode)
 
-**Scoring:** Each correct prediction earns the guessing player one point. There are five guesses per player and ten possible correct guesses as a couple; compatibility is `(correct guesses / 10) × 100%`. The final screen shows the shared percentage, individual 0–5 scores, and a question-by-question breakdown. An unanswered question is not counted as a correct match; no drinking penalties are attached. This is an entertainment quiz, not a scientific measure of relationship compatibility.
+- **Kart Clash** is an original two-player top-down real-time kart racer (not a Nintendo/Mario Kart game).
+- Choose one of **five drivers** (Blaze, Bubbles, Pickle, Nova, Ghost) with small stat differences.
+- Host chooses one of **five tracks** (Candy Coast, Neon Nights, Dusty Dash, Frostbite Pass, Cosmic Circuit).
+- Both players tap Ready, get a synchronized countdown, then race from separate phones.
+- Cars auto-accelerate. Hold **Left**, **Right**, or **Nitro**; steer around obstacles and keep to the roadway.
+- Nitro regenerates; glowing pickups refill it. Server simulates position, speed, obstacles, and finish order.
+- The losing player may choose a **small optional sip**, water, or a silly forfeit. Never mandatory.
+- No downloads for players. Deploy this Node app to Render as before and open your existing HTTPS website on each phone.
 
-A rematch returns to the room lobby so you can choose a different mode; replaying Compatibility generates a new random set.
+### Update from V2.1
 
-Quick automated checks: `node --test` (no dependencies needed for the question-deck tests).
+In your GitHub `sip-happens` directory, add **race.js** and **race.test.js**; replace **server.js**, **public/app.js**, **public/style.css**, and **public/index.html**. Commit. Keep the Render root directory `sip-happens`. If auto-deploy is disabled, choose Manual Deploy → Deploy latest commit. Start a *new room* to select Kart Clash.
 
-## ⚔️ SipBattle — new mode (V1.2)
+### Testing notes
 
-From the lobby select **SipBattle**. Each player gets their own hero and drafts **two distinct allies** from Bulwark (tank), Hex (mage), Patch (medic), Jinx (rogue), and Echo (bard). Both players lock in before a shared upgrade shop opens.
+`npm test` runs 15 existing and new logic tests. The two-phone live race and mobile touch controls still require actual device verification. Race rooms are held in server memory, as with the other modes, and reset if the instance restarts.
 
-In the shop, tap **+1 Power Point** up to five times, and spend 1–5 points on weapon and skill upgrades. A sip, water, or no drink is optional and all grant the **same** game point; no alcohol consumption is monitored or required. Every player can earn up to five power points. You may choose to purchase upgrades or keep some points unused. Both players press **Ready to Fight** to start the turn-based, synchronized combat arena.
+## Racing upgrades (motion + mystery boxes)
+Kart Clash now supports optional phone tilt steering in the browser. On iOS, tap **Enable Motion Steering** after starting a race to grant Safari motion access; permission requires HTTPS. On Android, allow sensor permissions if prompted. Orientation sensors may be unavailable in some browsers. Use the on-screen steering buttons as a fallback. Landscape orientation is recommended; orientation lock is controlled by phone/browser settings and cannot always be forced by the game.
 
-Choose a living attacker, a living enemy target, and **Attack**, **Special**, or **Guard**. Your main character is affected by weapon/armor/special upgrades, and allies have their own special abilities. The server validates all actions, computes HP and damage, keeps turn order, and declares a winner when all three enemies are defeated (or after 100 turns based on remaining total HP). The losing player may *optionally* take a small sip or choose an alcohol-free forfeit. Rematches return both players to the lobby and reset battle state.
+Drive over question-mark item boxes to collect one random item. Tap **Use Item** to activate Turbo Burst, Bubble Shield, Zap Bolt, Oil Slick, or Nitro Refill. The server validates items and applies effects. The original five tracks, eight modes, pause/resume, and game flow remain available. The art remains mostly procedural; the large image-asset redesign and three additional modes are **not part of this particular build**.
 
-Note: Shop points are intentionally not conditional on drinking; this avoids rewarding fast alcohol consumption. The game is playable with water or no beverages at all. No time limit is placed on the battle.
+## CoupleDuels V3.0 — Arcade & Art Update
 
-## V1.3: Leave party fix
-- A **Leave party** button is visible throughout active Rapid-Fire, Compatibility and SipBattle sessions, not only in the lobby/finale.
-- Leaving sends a server event before returning to the home screen; this releases the player's room slot.
-- When a guest leaves, the host returns to the lobby and may invite a second player again.
-- When the host leaves, the room closes and the guest returns to the home screen.
-- If connection drops, Leave still clears the local session so the player isn't trapped on a game screen.
+This build extends V2.5, preserving all existing game modes, Kart Clash motion steering and mystery-box items. New modes:
 
-To update a deployed GitHub repository, replace `server.js`, `public/app.js`, `public/index.html`, and `public/style.css` with the new versions, commit to `main`, and let Render redeploy.
+- **Distorted Guess:** eight blurred original visual clues, untimed. Each correct answer scores two points; clues reveal once both players answer.
+- **Quick Draw Duel:** seven reaction heats. Both ready up, a randomized delay begins, and an early tap is a false start. Fastest valid tap wins the heat.
+- **Memory Heist:** six illustrated image-memory rounds. Both players ready up; the image is visible for 6.5 seconds then concealed for an untimed four-choice guess.
 
-## V1.4: Untimed gameplay
-- Rapid-Fire Chaos votes, match questions and acting challenges do not have countdowns.
-- Couples Compatibility personal questions and partner guesses are untimed too.
-- Both players must submit their answer or tap DONE for a challenge before progression.
-- Short result reveals remain automatic (3.5 seconds in Chaos, 5 seconds in Compatibility).
-- SipBattle remains turn-based and untimed.
-- If a player disconnects, the room waits for reconnection instead of skipping their answer.
+Includes 26 original illustrated WebP assets extracted from artwork made for CoupleDuels. Lobby cards and racing map previews use image assets instead of emoji-only placeholders. The earlier eight games remain included; the browser lobby now offers eleven total modes.
 
-To update an existing Render deployment, replace `server.js`, `game.js`, and `public/app.js` in the existing GitHub repository and commit to `main`.
+**Update existing deployment:** Replace the contents of the GitHub `sip-happens/` directory with the contents of this ZIP's `sip-happens/`, including `arcade.js`, `public/arcade-ui.js`, `public/arcade.css`, and `public/art/*.webp`. Keep your Render root directory as `sip-happens`, then deploy the latest commit. Never upload an extra nested `sip-happens/sip-happens` directory. Restart or create a new room after deployment and refresh both phones.
+
+**Validation:** Run `npm test`; ensure `npm install` and `npm start` work in your hosting environment. New modes have automated rules tests but still require physical two-phone UX testing. Some graphics remain Canvas-rendered (notably the racing road and kart), and the artwork layer is a polish pass rather than full 3D racing graphics.

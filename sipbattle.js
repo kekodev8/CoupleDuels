@@ -5,7 +5,9 @@ const ALLIES=[
  {id:'mage',name:'Hex',emoji:'🔮',hp:31,attack:11,skill:'Arcane Burst'},
  {id:'medic',name:'Patch',emoji:'💚',hp:36,attack:7,skill:'Team Heal'},
  {id:'rogue',name:'Jinx',emoji:'🗡️',hp:32,attack:10,skill:'Double Strike'},
- {id:'bard',name:'Echo',emoji:'🎸',hp:37,attack:8,skill:'Battle Hymn'}
+ {id:'bard',name:'Echo',emoji:'🎸',hp:37,attack:8,skill:'Battle Hymn'},
+ {id:'archer',name:'Arrow',emoji:'🏹',hp:35,attack:9,skill:'Piercing Shot'},
+ {id:'mystic',name:'Luna',emoji:'🌙',hp:39,attack:8,skill:'Moonlight Shield'}
 ];
 const UPGRADES=[
  {id:'blade',name:'Sharpen Weapon',cost:1,desc:'+2 main character attack',max:3},
@@ -49,6 +51,8 @@ function fight(b,players,id,actorId,targetId,move){if(b.stage!=='fight')return '
  else if(actor.id==='mage'){msg=`${actor.name} blasts ${target.name} for ${damage(target,actor.attack+7)} magic damage!`;}
  else if(actor.id==='rogue'){const d1=damage(target,actor.attack);const d2=target.hp>0?damage(target,6):0;msg=`${actor.name} strikes twice for ${d1+d2} damage!`;}
  else if(actor.id==='medic'){const ally=mine.units.filter(u=>u.hp>0).sort((a,c)=>a.hp/a.maxHp-c.hp/c.maxHp)[0];const healed=Math.min(15,ally.maxHp-ally.hp);ally.hp+=healed;msg=`${actor.name} heals ${ally.name} for ${healed} HP.`;}
+ else if(actor.id==='archer'){msg=`${actor.name} lands a precise shot on ${target.name} for ${damage(target,actor.attack+5)} damage!`;}
+ else if(actor.id==='mystic'){const ally=mine.units.filter(u=>u.hp>0).sort((a,c)=>a.hp/a.maxHp-c.hp/c.maxHp)[0];ally.guard=true;msg=`${actor.name} gives ${ally.name} a moonlit shield for the next hit!`;}
  else if(actor.id==='bard'){for(const u of mine.units)if(u.hp>0)u.attack+=2;msg=`${actor.name} inspires the team: +2 attack for living allies!`;}
  b.log.push(msg);b.log=b.log.slice(-12);b.turnCount++;
  if(enemy.units.every(u=>u.hp<=0)){b.stage='finished';b.winner=id;b.log.push('🏆 '+active.name+' wins!');}
