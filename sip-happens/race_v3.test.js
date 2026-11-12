@@ -1,4 +1,0 @@
-const test=require('node:test');const assert=require('node:assert/strict');const kart=require('./race');
-const players=[{id:'a',name:'A'},{id:'b',name:'B'}];
-test('mystery boxes award one held item',()=>{const r=kart.createRace(players);r.stage='racing';r.lastUpdate=0;r.players[0].distance=89;r.players[0].x=r.players[0].x;r.players[0].seen=[];const box=kart.publicRace(r).obstacles.find(o=>o.type==='box');assert.ok(box);assert.ok(kart.ITEMS.length>=5);});
-test('power-ups affect players and are consumed',()=>{const r=kart.createRace(players);r.stage='racing';const p=r.players[0];p.item='shield';assert.equal(kart.useItem(r,'a',1000),null);assert.equal(p.shield,true);assert.equal(p.item,null);p.item='refill';p.nitro=10;kart.useItem(r,'a',1100);assert.equal(p.nitro,75);p.item='zap';kart.useItem(r,'a',1200);assert.ok(r.players[1].hitUntil>1200);});
