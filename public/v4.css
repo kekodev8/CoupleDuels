@@ -49,3 +49,9 @@ body[data-mode="story"][data-chapter="5"] .story-illustration{background-image:u
 .mode-card .mode-art,.mode-card strong,.mode-card small,.mode-card .new-chip{pointer-events:none}
 .mode-card:active:not(:disabled){transform:scale(.985);filter:brightness(1.08)}
 .mode-card:focus-visible{outline:3px solid var(--tile);outline-offset:3px}
+
+/* V4.1.3: native mobile game selector is the reliable primary control. */
+.mode-picker{grid-column:1/-1;display:grid;gap:7px;padding:13px;border:1px solid #426d65;background:#132d2e;border-radius:14px}
+.mode-picker label{font-size:11px;font-weight:900;color:#9fe3d0;letter-spacing:.07em}
+.mode-picker select{width:100%;min-height:54px;font:700 16px system-ui,sans-serif;color:#f5fffc;background:#223b40;border:2px solid #6ccdb4;border-radius:12px;padding:10px 13px;appearance:auto;-webkit-appearance:menulist;touch-action:manipulation}
+.mode-picker small{color:#bed4d1;font-size:11px}.mode-picker select:disabled{opacity:.6}
