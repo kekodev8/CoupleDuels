@@ -1,14 +1,14 @@
 /* CoupleDuels V3 arcade game screens. Uses shared state/socket/helpers from app.js. */
-function publicWikiArt(q,extra=''){
- const name=String(q?.imagePage||'');
- const attr=safe(name);const category=safe(q?.category||'Pop culture');
- return `<div class="wiki-frame wiki-loading ${extra}"><span class="wiki-placeholder loading"><b>SCANNING IMAGE SOURCE…</b><small>Pulling a real ${category.toLowerCase()} image.</small></span><span class="wiki-placeholder unavailable"><span class="mystery-badge">❓ BONUS MYSTERY ROUND</span><b>THE IMAGE GLITCHED OUT</b><small>No worries — use the answer choices and guess anyway.</small></span><img data-wiki-page="${attr}" alt="${category} visual puzzle" style="display:none"><small class="wiki-credit">Image source · Wikipedia / Wikimedia Commons · ${category}</small></div>`;
+function publicWikiArt(q,extra='',showSource=false){
+ const page=safe(q?.imagePage||'');
+ // No category, filename, article name, publisher, or source shown while guessing.
+ return `<div class="wiki-frame wiki-loading ${extra}"><span class="wiki-placeholder loading"><b>PREPARING THE PICTURE…</b><small>Loading your mystery card.</small></span><span class="wiki-placeholder unavailable"><span class="mystery-badge">MYSTERY MODE</span><b>PICTURE SIGNAL LOST</b><small>Use the choices to solve the mystery!</small></span><img data-wiki-page="${page}" alt="Mystery picture" style="display:none">${showSource?'<small class="wiki-credit">Image from Wikipedia, Wikimedia Commons, or an Openverse-indexed provider.</small>':''}</div>`;
 }
 function arcadeArt(name){return '/art/'+name+'.webp'}
 function renderArcade(){
  const a=state.arcade;if(!a)return root('<div class="info">Loading arcade…</div>');
  const me=a.players.find(p=>p.id===state.youId),host=state.hostId===state.youId;
- if(a.mode==='memory'&&a.stage==='ready'&&a.question?.imagePage)wikiThumbnail(a.question.imagePage); // preload during ready screen
+ if(a.mode==='memory'&&a.stage==='ready'&&a.question?.imagePage)wikiThumbnail(a.question.imagePage); // start preloading while players prepare
  const titles={distorted:'DISTORTED GUESS',quickdraw:'QUICK DRAW DUEL',memory:'MEMORY HEIST'};
  let body='';
  const scores=`<div class="mini-scores">${a.players.map(p=>`<div><span>${safe(p.name)}</span><b>${p.score} pts</b></div>`).join('')}</div>`;
@@ -17,14 +17,14 @@ function renderArcade(){
   body=`<div class="arcade-scene gameover"><img class="arcade-hero" src="${arcadeArt(a.mode==='distorted'?'card-distorted':a.mode==='memory'?'card-memory':'card-quickdraw')}" alt="Game artwork"><h2>${winner?safe(winner.name)+' WINS!':'IT’S A TIE!'}</h2>${scores}${host?'<button class="primary" id="arcadeRestart">CHOOSE ANOTHER GAME</button>':'<p>Waiting for host…</p>'}</div>`;
  }else if(a.mode==='distorted'){
   const q=a.question;
-  body=`<div class="arcade-scene"><p class="kicker">PICTURE ${a.index+1}/${a.total}</p><h2>WHAT'S HIDING IN THE IMAGE?</h2><div class="image-riddle ${a.stage==='question'?'riddle-obscured':''}">${publicWikiArt(q)}</div>${a.stage==='question'?(me.answered?'<div class="info">Answer locked. Waiting for your partner…</div>':`<div class="choicegrid">${q.choices.map((v,i)=>`<button class="choice" data-arcade-answer="${i}">${safe(v)}</button>`).join('')}</div>`):`<div class="reveal"><h3>${a.results?.answers.find(x=>x.id===state.youId)?.correct?'CORRECT! +2':'REVEALED!'}</h3><p>It was ${safe(q.choices[a.results?.correct]||'a mystery')}!</p>${a.results.answers.map(p=>`<p><b>${safe(p.name)}:</b> ${safe(q.choices[p.answer]||'—')} ${p.correct?'✓':'✗'}</p>`).join('')}</div><button id="arcadeRevealReady" class="primary" ${me.ready?'disabled':''}>${me.ready?'WAITING FOR PARTNER…':'READY FOR NEXT IMAGE'}</button>`}</div>${scores}`;
+  body=`<div class="arcade-scene"><p class="kicker">PICTURE ${a.index+1}/${a.total}</p><h2>WHAT'S HIDING IN THE IMAGE?</h2><div class="image-riddle ${a.stage==='question'?'riddle-obscured':''}">${publicWikiArt(q,'',a.stage!=='question')}</div>${a.stage==='question'?(me.answered?'<div class="info">Answer locked. Waiting for your partner…</div>':`<div class="choicegrid">${q.choices.map((v,i)=>`<button class="choice" data-arcade-answer="${i}">${safe(v)}</button>`).join('')}</div>`):`<div class="reveal"><h3>${a.results?.answers.find(x=>x.id===state.youId)?.correct?'CORRECT! +2':'REVEALED!'}</h3><p>It was ${safe(q.choices[a.results?.correct]||'a mystery')}!</p>${a.results.answers.map(p=>`<p><b>${safe(p.name)}:</b> ${safe(q.choices[p.answer]||'—')} ${p.correct?'✓':'✗'}</p>`).join('')}</div><button id="arcadeRevealReady" class="primary" ${me.ready?'disabled':''}>${me.ready?'WAITING FOR PARTNER…':'READY FOR NEXT IMAGE'}</button>`}</div>${scores}`;
  }else if(a.mode==='memory'){
   const q=a.question;
   let contents='';
-  if(a.stage==='ready')contents=`<img class="arcade-hero" src="${arcadeArt('memory-cards')}" alt="Illustrated cards"><h2>READY TO MEMORIZE?</h2><p>The image flashes briefly. Every round gets faster: from 4.2 to 1.3 seconds!</p><button id="arcadeReady" class="primary" ${me.ready?'disabled':''}>${me.ready?'WAITING FOR PARTNER…':'I’M READY'}</button>`;
+  if(a.stage==='ready')contents=`<img class="arcade-hero" src="${arcadeArt('memory-cards')}" alt="Illustrated cards"><h2>READY TO MEMORIZE?</h2><p>The image flashes briefly. Every round gets faster: from 4.2 to 1.3 seconds!</p><div id="memoryLoadStatus" class="info">Preparing the next image…</div><button id="arcadeReady" class="primary" disabled>${me.ready?'WAITING FOR PARTNER…':'PREPARING IMAGE…'}</button>`;
   if(a.stage==='preview')contents=`<h2>REMEMBER THIS PICTURE</h2><p class="arcade-clock" id="arcadeClock">${a.deadline?Math.max(0,Math.ceil((a.deadline-Date.now())/1000)):''}</p>${publicWikiArt(q,'memory-preview')}`;
   if(a.stage==='guess')contents=`<h2>WHAT DID YOU JUST SEE?</h2><div class="memory-hidden">?</div>${me.answered?'<div class="info">Locked in — waiting for your partner</div>':`<div class="choicegrid">${q.choices.map((v,i)=>`<button class="choice" data-arcade-answer="${i}">${safe(v)}</button>`).join('')}</div>`}`;
-  if(a.stage==='reveal')contents=`<h2>${a.results?.answers.find(x=>x.id===state.youId)?.correct?'CORRECT!':'THE REVEAL'}</h2>${publicWikiArt(q,'memory-preview')}<p><b>Correct:</b> ${safe(q.choices[a.results.correct])}</p>${a.results.answers.map(p=>`<p>${safe(p.name)} chose ${safe(q.choices[p.answer]||'—')} ${p.correct?'✓':'✗'}</p>`).join('')}<button class="primary" id="arcadeRevealReady" ${me.ready?'disabled':''}>${me.ready?'WAITING FOR PARTNER…':'READY FOR NEXT ROUND'}</button>`;
+  if(a.stage==='reveal')contents=`<h2>${a.results?.answers.find(x=>x.id===state.youId)?.correct?'CORRECT!':'THE REVEAL'}</h2>${publicWikiArt(q,'memory-preview',true)}<p><b>Correct:</b> ${safe(q.choices[a.results.correct])}</p>${a.results.answers.map(p=>`<p>${safe(p.name)} chose ${safe(q.choices[p.answer]||'—')} ${p.correct?'✓':'✗'}</p>`).join('')}<button class="primary" id="arcadeRevealReady" ${me.ready?'disabled':''}>${me.ready?'WAITING FOR PARTNER…':'READY FOR NEXT ROUND'}</button>`;
   body=`<div class="arcade-scene"><p class="kicker">MEMORY ${a.index+1}/${a.total}</p>${contents}</div>${scores}`;
  }else if(a.mode==='quickdraw'){
   const result=a.results;
@@ -34,7 +34,18 @@ function renderArcade(){
  root(`<div class="section-top"><span class="kicker">✦ ${titles[a.mode]}</span><span class="round">${Math.min(a.index+1,a.total)}/${a.total}</span></div><div class="progress"><div style="width:${Math.round(a.index/a.total*100)}%"></div></div>${body}<p class="fine">Synchronized on both phones · Shared pause · Optional drinks only</p>`);
  document.querySelectorAll('[data-arcade-answer]').forEach(b=>b.onclick=async()=>{b.disabled=true;const r=await emit('arcade:answer',{answer:Number(b.dataset.arcadeAnswer)});if(!r.ok)notice(r.error)});
  qs('#arcadeRevealReady')?.addEventListener('click',async()=>{const r=await emit('arcade:ready');if(!r.ok)notice(r.error)});
- qs('#arcadeReady')?.addEventListener('click',async()=>{const r=await emit('arcade:ready');if(!r.ok)notice(r.error)});
+ const readyButton=qs('#arcadeReady');
+ if(readyButton&&a.mode==='memory'&&a.stage==='ready'){
+  const page=a.question?.imagePage;
+  wikiThumbnail(page).then(ok=>{
+   if(!readyButton.isConnected||state?.arcade?.index!==a.index||state?.arcade?.stage!=='ready')return;
+   const line=qs('#memoryLoadStatus');
+   if(line)line.textContent=ok?'Picture ready — the timer starts once you both tap Ready.':'Mystery fallback ready — the game remains playable.';
+   readyButton.disabled=!!me.ready;
+   readyButton.textContent=me.ready?'WAITING FOR PARTNER…':'I’M READY';
+  });
+ }
+ readyButton?.addEventListener('click',async()=>{readyButton.disabled=true;const r=await emit('arcade:ready');if(!r.ok){notice(r.error);readyButton.disabled=false;}});
  qs('#arcadeDraw')?.addEventListener('pointerdown',async e=>{e.preventDefault();const r=await emit('arcade:draw');if(!r.ok&&r.error!=='Already tapped.')notice(r.error)});
  qs('#arcadeRestart')?.addEventListener('click',async()=>{const r=await emit('restart');if(!r.ok)notice(r.error)});
  if(a.stage==='preview'&&a.deadline){const deadline=a.deadline;clockInterval=setInterval(()=>{const node=qs('#arcadeClock');if(node&&state&&!state.paused)node.textContent=Math.max(0,Math.ceil((deadline-Date.now())/1000))},110)}

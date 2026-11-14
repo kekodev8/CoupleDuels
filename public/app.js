@@ -1,33 +1,20 @@
 
-// Display article thumbnail images from Wikipedia/Wikimedia at play time.
-// We try two public Wikipedia endpoints and fall back gracefully if no picture is available.
-const wikiArtworkCache=new Map();
+// A single same-origin image endpoint chooses the first available picture from
+// several independent public providers. Memory cards preload before players ready.
+const clueCache=new Map();
 function wikiThumbnail(page){
- if(!wikiArtworkCache.has(page)){
-  const summaryUrl='https://en.wikipedia.org/api/rest_v1/page/summary/'+encodeURIComponent(page);
-  const queryUrl='https://en.wikipedia.org/w/api.php?'+new URLSearchParams({action:'query',prop:'pageimages',format:'json',formatversion:'2',piprop:'thumbnail',pithumbsize:'900',titles:page,origin:'*'});
-  const task=(async()=>{
-   try{
-    const s=await fetch(summaryUrl,{headers:{accept:'application/json'}});
-    if(s.ok){
-     const j=await s.json();
-     const hit=j?.thumbnail?.source||null;
-     if(hit)return hit;
-    }
-   }catch{}
-   try{
-    const q=await fetch(queryUrl);
-    if(q.ok){
-     const j=await q.json();
-     const hit=j.query?.pages?.[0]?.thumbnail?.source||null;
-     if(hit)return hit;
-    }
-   }catch{}
-   return null;
-  })().then(url=>{if(url){const image=new Image();image.src=url;}return url;});
-  wikiArtworkCache.set(page,task);
+ if(!clueCache.has(page)){
+  const promise=new Promise(resolve=>{
+   const image=new Image();let done=false;
+   const finish=value=>{if(done)return;done=true;resolve(value);};
+   image.onload=()=>finish(image.naturalWidth>0);
+   image.onerror=()=>finish(false);
+   image.src='/api/clue-image?title='+encodeURIComponent(page);
+   if(image.complete)finish(image.naturalWidth>0);
+  });
+  clueCache.set(page,promise);
  }
- return wikiArtworkCache.get(page);
+ return clueCache.get(page);
 }
 async function hydrateWikiImages(){
  const nodes=[...document.querySelectorAll('.wiki-frame img[data-wiki-page]')];
@@ -36,18 +23,14 @@ async function hydrateWikiImages(){
   const frame=img.closest('.wiki-frame');
   frame?.classList.remove('wiki-unavailable','wiki-loaded');
   frame?.classList.add('wiki-loading');
-  const result=await wikiThumbnail(page);
+  const ok=await wikiThumbnail(page);
   if(img.isConnected&&img.dataset.wikiPage===page){
-   if(result){
+   if(ok){
     img.onload=()=>{frame?.classList.remove('wiki-loading');frame?.classList.add('wiki-loaded');img.style.display='block';};
     img.onerror=()=>{img.style.display='none';frame?.classList.remove('wiki-loading');frame?.classList.add('wiki-unavailable');};
-    img.src=result;
-    if(img.complete) img.onload();
-   } else {
-    img.style.display='none';
-    frame?.classList.remove('wiki-loading');
-    frame?.classList.add('wiki-unavailable');
-   }
+    img.src='/api/clue-image?title='+encodeURIComponent(page);
+    if(img.complete&&img.naturalWidth>0)img.onload();
+   }else{img.style.display='none';frame?.classList.remove('wiki-loading');frame?.classList.add('wiki-unavailable');}
   }
  }
 }
@@ -88,10 +71,72 @@ async function togglePause(){if(!state||!['playing','reveal'].includes(state.pha
 
 
 function nameValue(){return (qs('#nickname')?.value||localStorage.getItem('sipName')||'Player').trim().slice(0,20)||'Player'}
-function renderHome(){document.body.dataset.mode="home";el.innerHTML=`<section class="landing"><div class="home-art" role="img" aria-label="CoupleDuels fantasy arcade artwork"></div><div class="eyebrow">TWO PHONES · ONE CHAOTIC DUO</div><h1>LOVE IS A <em>GAME.</em><br>PLAY IT.</h1><p>11 games. Two phones. Your own private arcade.</p><div class="hero-chip">⚡ Chaos · 💘 Compatibility · ⚔️ Battle · 📖 Story · 🏎️ Racing</div><div class="panel"><label>Your nickname</label><input id="nickname" maxlength="20" placeholder="Your name" value="${safe(localStorage.getItem('sipName')||'')}"><button id="create" class="primary">CREATE A ROOM <span>↗</span></button><div class="separator"><span>or join your partner</span></div><input id="roomInput" maxlength="6" placeholder="6-character room code" value="${safe(roomFromUrl)}" autocomplete="off"><button id="join" class="secondary">JOIN ROOM</button></div><p class="fine">No accounts · Android + iPhone · Optional sips, never required</p></section>`;
+const neonGames=[
+ ['Rapid-Fire Chaos','rapid','Chaos','Four questions, then one surprise challenge.'],
+ ['Couples Compatibility','compatibility','Compatibility','How well do you know each other?'],
+ ['SipBattle','sipbattle','Battle','Choose allies and fight as a team.'],
+ ['Create Story','story','Story','Build a story with wild twists.'],
+ ['Kart Clash','racing','Racing','Five tracks, phone motion and power-ups.'],
+ ['Distorted Guess','distorted','Chaos','Recognize familiar movies and cartoons.'],
+ ['Memory Heist','memory','Chaos','Remember the picture before it vanishes.'],
+ ['Mind Meld','mindmeld','Compatibility','Will your secret answers match?'],
+ ['Emoji Rush','emoji','Chaos','Solve pop-culture emoji puzzles.'],
+ ['Tap Duel','tap','Battle','Compete in a lightning-fast tap showdown.'],
+ ['Quick Draw Duel','quickdraw','Battle','React first when the signal appears!']
+];
+function renderHome(){
+ document.body.dataset.mode='home';
+ el.innerHTML=`<section class="neon-home" aria-label="CoupleDuels Neon Arcade home">
+  <div class="neon-home-scene" aria-hidden="true"></div>
+  <div class="neon-home-inner">
+   <img class="neon-headline" src="/neon/headline.webp" alt="Couple Games Can Be Fun">
+   <img class="neon-hero" src="/neon/hero.webp" alt="Two glowing controllers with a pixel heart">
+   <p class="neon-tagline">11 games · Two phones · Your own private arcade</p>
+   <img class="neon-modes-heading" src="/neon/modes.webp" alt="Game Modes">
+   <div class="neon-carousel" id="neonCarousel" role="region" aria-label="Browse the 11 game modes horizontally" tabindex="0">
+    ${neonGames.map(([title,image,category,desc],i)=>`<button type="button" class="neon-game-card${i===0?' is-centered':''}" data-neon-index="${i}" aria-label="Explore ${safe(title)}; go to room setup">
+      <img src="/neon/${image}.webp" alt="" loading="${i<3?'eager':'lazy'}" decoding="async"><strong>${safe(title)}</strong><small>${safe(desc)}</small><span>View game · Continue ↓</span>
+    </button>`).join('')}
+   </div>
+   <p class="neon-carousel-caption" id="neonBrowseStatus">Swipe sideways to explore · Tap a game to continue</p>
+   <div class="neon-nav" aria-label="Carousel navigation"><button type="button" class="neon-arrow" id="neonPrev" aria-label="Previous game">‹</button><div id="neonDots" class="neon-dots"></div><button type="button" class="neon-arrow" id="neonNext" aria-label="Next game">›</button></div>
+   <p class="neon-after">Explore the games here. <strong>Choose what to play inside your room.</strong></p>
+   <section class="neon-room" id="neonRoom" aria-labelledby="neonRoomTitle">
+    <h2 class="neon-room-title" id="neonRoomTitle">READY TO PLAY TOGETHER?</h2>
+    <p class="neon-room-subtitle">Create a party or join your partner. Pick your game once you're both inside.</p>
+    <label for="nickname">YOUR NICKNAME</label>
+    <input id="nickname" maxlength="20" placeholder="Your name" autocomplete="nickname" value="${safe(localStorage.getItem('sipName')||'')}">
+    <button id="create" class="neon-action" aria-label="Create a room"><img src="/neon/create.webp" alt="Create Room"></button>
+    <div class="neon-separator">or join your partner</div>
+    <label for="roomInput">ROOM CODE</label>
+    <input id="roomInput" maxlength="6" placeholder="6-character room code" value="${safe(roomFromUrl)}" autocomplete="off" autocapitalize="characters" spellcheck="false">
+    <button id="join" class="neon-action" aria-label="Join a room"><img src="/neon/join.webp" alt="Join Room"></button>
+   </section>
+   <p class="neon-footnote">No accounts · Android + iPhone · Optional sips, never required</p>
+  </div>
+ </section>`;
  qs('#create').onclick=async()=>{const name=nameValue();localStorage.setItem('sipName',name);const r=await emit('create',{name});if(r.ok)remember(r.code,r.token,name);else notice(r.error)};
  qs('#join').onclick=async()=>{const name=nameValue(),code=qs('#roomInput').value.trim().toUpperCase();if(!/^[A-F0-9]{6}$/.test(code))return notice('Enter a valid 6-character room code.');localStorage.setItem('sipName',name);const r=await emit('join',{code,name});if(r.ok)remember(r.code,r.token,name);else notice(r.error)};
+ setupNeonCarousel();
 }
+function setupNeonCarousel(){
+ const track=qs('#neonCarousel'),room=qs('#neonRoom'),dots=qs('#neonDots'),cards=[...track.querySelectorAll('.neon-game-card')];
+ if(!track||!room||!dots)return;
+ const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+ const behavior=()=>reduced?'auto':'smooth';
+ let active=0,settle;
+ dots.innerHTML=cards.map((_,i)=>`<button type="button" class="neon-dot${i===0?' on':''}" data-dot="${i}" aria-label="Browse ${safe(neonGames[i][0])}"></button>`).join('');
+ function mark(i){active=(i+cards.length)%cards.length;cards.forEach((c,j)=>{c.classList.toggle('is-centered',j===active);c.setAttribute('aria-current',String(j===active))});dots.querySelectorAll('button').forEach((b,j)=>b.classList.toggle('on',j===active));}
+ function center(i){mark(i);const c=cards[active];track.scrollTo({left:c.offsetLeft-(track.clientWidth-c.clientWidth)/2,behavior:behavior()});}
+ function goToRoom(){room.classList.add('neon-arrived');room.scrollIntoView({behavior:behavior(),block:'start'});clearTimeout(room._pulse);room._pulse=setTimeout(()=>room.classList.remove('neon-arrived'),1800);}
+ cards.forEach((c,i)=>c.addEventListener('click',()=>{mark(i);goToRoom()}));
+ dots.addEventListener('click',e=>{const b=e.target.closest('[data-dot]');if(b)center(Number(b.dataset.dot))});
+ qs('#neonPrev').onclick=()=>center(active-1);qs('#neonNext').onclick=()=>center(active+1);
+ track.addEventListener('scroll',()=>{clearTimeout(settle);settle=setTimeout(()=>{let nearest=0,dist=Infinity;cards.forEach((c,i)=>{const d=Math.abs(c.offsetLeft+c.clientWidth/2-(track.scrollLeft+track.clientWidth/2));if(d<dist){dist=d;nearest=i}});mark(nearest)},85)},{passive:true});
+ // First card is centered immediately without any page scroll or animations.
+ requestAnimationFrame(()=>{if(track.isConnected){const c=cards[0];track.scrollLeft=Math.max(0,c.offsetLeft-(track.clientWidth-c.clientWidth)/2)}});
+}
+
 function playersHtml(){return `<div class="people">${state.players.map(p=>`<div class="person"><strong>${safe(p.name)} ${p.id===state.youId?'(you)':''}</strong><small>${p.connected?'🟢 Connected':'⚪ Offline'} ${p.id===state.hostId?'· Host':''}</small><br><b>${p.score}</b> <small>pts</small></div>`).join('')}${state.players.length<2?'<div class="person"><strong>Waiting for player 2…</strong><small>Scan the QR to join</small></div>':''}</div>`}
 function root(content){el.innerHTML=`<section class="gameview">${content}</section>`;hydrateWikiImages()}
 function renderLobby(){const url=`${location.origin}/?room=${state.code}`,qr=`/api/qr?url=${encodeURIComponent(url)}`,host=state.youId===state.hostId;
