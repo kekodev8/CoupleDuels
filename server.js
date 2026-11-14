@@ -75,7 +75,7 @@ function snapshot(room,token){
    breakdown:room.compat.guessIndices.map((qi,order)=>({question:room.compat.questions[qi].title,
     choices:room.compat.questions[qi].choices,players:room.players.map(p=>({id:p.id,name:p.name,selfAnswer:room.compat.selfAnswers[p.id][qi],guess:room.compat.guessAnswers[p.id][order],partnerAnswer:room.compat.selfAnswers[room.players.find(other=>other.id!==p.id).id][qi]}))}))};
  }
- return {party:room.mode==='party'?party.publicState(room.party,room.players,you?.id):null,votes:room.votes||{},arcade:room.arcade?arcade.publicState(room.arcade):null,mini:room.mini?mini.publicMini(room.mini):null,race:room.mode==='race'&&room.race?kart.publicRace(room.race):null,story:room.mode==='story'&&room.story?storyEngine.publicStory(room.story,room.players):null,battle:room.mode==='sipbattle'&&room.battle?battle.publicBattle(room.battle,room.players):null,code:room.code,mode:room.mode,phase:room.phase,paused:!!room.paused,pausedBy:room.pausedBy||null,players:room.players.map(p=>({id:p.id,name:p.name,connected:!!p.socketId,score:p.score,ready:!!p.ready,avatar:p.avatar||'m1',color:Number.isInteger(p.color)?p.color:0,mood:p.mood||'Chill',drinks:p.drinks||0,wins:p.wins||0,vote:(room.votes||{})[p.id]||null,answered:isActive?!!(p.answer!==null):undefined})),youId:you?.id,hostId:room.players[0]?.id,roundIndex:room.index,deadline:room.deadline||null,round,reveal,summary};
+ return {quickdraw:room.mode==='quickdraw'&&room.drawGame?party.publicState(room.drawGame,room.players,you?.id):null,party:room.mode==='party'?party.publicState(room.party,room.players,you?.id):null,votes:room.votes||{},arcade:room.arcade?arcade.publicState(room.arcade):null,mini:room.mini?mini.publicMini(room.mini):null,race:room.mode==='race'&&room.race?kart.publicRace(room.race):null,story:room.mode==='story'&&room.story?storyEngine.publicStory(room.story,room.players):null,battle:room.mode==='sipbattle'&&room.battle?battle.publicBattle(room.battle,room.players):null,code:room.code,mode:room.mode,phase:room.phase,paused:!!room.paused,pausedBy:room.pausedBy||null,players:room.players.map(p=>({id:p.id,name:p.name,connected:!!p.socketId,score:p.score,ready:!!p.ready,avatar:p.avatar||'m1',color:Number.isInteger(p.color)?p.color:0,mood:p.mood||'Chill',drinks:p.drinks||0,wins:p.wins||0,vote:(room.votes||{})[p.id]||null,answered:isActive?!!(p.answer!==null):undefined})),youId:you?.id,hostId:room.players[0]?.id,roundIndex:room.index,deadline:room.deadline||null,round,reveal,summary};
 }
 function transition(room){
  if(room.paused)return;
@@ -150,7 +150,7 @@ io.on('connection',socket=>{
  socket.on('create',({name}={},ack)=>{
   if(socket.data.code)return ackError(ack,'Already in a room');
   const code=roomCode(),token=uid();
-  const room={code,votes:{},party:null,phase:'lobby',mode:'rapid',index:0,compat:null,battle:null,story:null,race:null,mini:null,arcade:null,paused:false,pausedAt:null,pausedBy:null,rapidRounds:null,rapidHistory:[],updated:Date.now(),players:[{id:uid(),token,name:cleanName(name),socketId:null,score:0,answer:null,ready:false,avatar:'m1',color:0,mood:'Chill',drinks:0,wins:0}]};
+  const room={code,votes:{},party:null,drawGame:null,phase:'lobby',mode:'rapid',index:0,compat:null,battle:null,story:null,race:null,mini:null,arcade:null,paused:false,pausedAt:null,pausedBy:null,rapidRounds:null,rapidHistory:[],updated:Date.now(),players:[{id:uid(),token,name:cleanName(name),socketId:null,score:0,answer:null,ready:false,avatar:'m1',color:0,mood:'Chill',drinks:0,wins:0}]};
   rooms.set(code,room);attach(socket,room,room.players[0]);ackOK(ack,{code,token});
  });
  socket.on('join',({code,token,name}={},ack)=>{
@@ -199,11 +199,13 @@ io.on('connection',socket=>{
   room.index=0;room.phase='playing';room.winsRecorded=false;room.paused=false;room.pausedAt=null;room.pausedBy=null;
   room.party=room.mode==='party'?party.make():null;
   if(room.party)party.begin(room.party,room.players);
+  room.drawGame=room.mode==='quickdraw'?{index:0,stage:'playing',rounds:[{mode:'quickdraw',prompt:'Draw and guess',choices:[],type:'draw'}],answers:{},ready:{},results:null,draw:null,kart:null}:null;
+  if(room.drawGame)party.begin(room.drawGame,room.players);
   room.battle=room.mode==='sipbattle'?battle.makeBattle(room.players):null;
   room.story=room.mode==='story'?storyEngine.makeStory():null;
   room.race=room.mode==='race'?kart.createRace(room.players):null;
   room.mini=['mindmeld','emojirush','tapduel'].includes(room.mode)?mini.make(room.mode,room.players):null;
-  room.arcade=['distorted','quickdraw','memory'].includes(room.mode)?arcade.make(room.mode,room.players):null;
+  room.arcade=['distorted','memory'].includes(room.mode)?arcade.make(room.mode,room.players):null;
   if(room.mode==='rapid'){
    const deck=createRapidDeck(room.rapidHistory);
    room.rapidRounds=deck.rounds;room.rapidHistory.push(...deck.ids);
@@ -244,6 +246,19 @@ io.on('connection',socket=>{
   const ranking=room.players.slice().sort((a,b)=>b.score-a.score);if(ranking[0].score===ranking[1].score||ranking[1].id!==player.id)return ackError(ack,'Only the other player chooses.');
   if(!['drink','challenge','skip'].includes(choice))return ackError(ack,'Unknown choice.');
   room.party.outcome=choice;room.updated=Date.now();broadcast(room);ackOK(ack,{});
+ });
+ socket.on('quickdraw:stroke',({points}={},ack)=>{
+  const {room,player}=current(socket);
+  if(!room||!player||room.mode!=='quickdraw'||!room.drawGame||room.phase!=='playing'||room.paused)return ackError(ack,'Drawing is unavailable.');
+  const err=party.drawStroke(room.drawGame,room.players,player.id,points);if(err)return ackError(ack,err);
+  for(const peer of room.players)if(peer.socketId)io.to(peer.socketId).emit('quickdraw:stroke',{points,drawerId:player.id});
+  ackOK(ack,{});
+ });
+ socket.on('quickdraw:guess',({word}={},ack)=>{
+  const {room,player}=current(socket);
+  if(!room||!player||room.mode!=='quickdraw'||!room.drawGame||room.phase!=='playing'||room.paused)return ackError(ack,'Guess unavailable.');
+  const err=party.guess(room.drawGame,room.players,player.id,word);if(err)return ackError(ack,err);
+  room.updated=Date.now();broadcast(room);ackOK(ack,{});
  });
  socket.on('party:stroke',({points}={},ack)=>{
   const {room,player}=current(socket);if(!room||!player||room.mode!=='party'||room.phase!=='playing'||room.paused)return ackError(ack,'Party unavailable.');
@@ -333,7 +348,7 @@ io.on('connection',socket=>{
   const {room,player}=current(socket);
   if(!room||!player||player.id!==room.players[0].id)return ackError(ack,'Host only.');
   if(!hasCompletedGame(room))return ackError(ack,'Finish the game first.');
-  clearTimeout(room.timer);room.deadline=null;room.phase='lobby';room.party=null;room.votes={};room.paused=false;room.pausedAt=null;room.pausedBy=null;room.index=0;room.story=null;room.mini=null;room.arcade=null;room.race=null;room.battle=null;room.players.forEach(p=>{p.score=0;p.answer=null;p.ready=false});broadcast(room);ackOK(ack,{});
+  clearTimeout(room.timer);room.deadline=null;room.phase='lobby';room.party=null;room.drawGame=null;room.votes={};room.paused=false;room.pausedAt=null;room.pausedBy=null;room.index=0;room.story=null;room.mini=null;room.arcade=null;room.race=null;room.battle=null;room.players.forEach(p=>{p.score=0;p.answer=null;p.ready=false});broadcast(room);ackOK(ack,{});
  });
  socket.on('leave',(_,ack)=>{
   const {room,player}=current(socket);
@@ -355,7 +370,7 @@ io.on('connection',socket=>{
   }else{
    room.players=room.players.filter(p=>p.id!==player.id);
    clearTimeout(room.timer);room.timer=null;room.phase='lobby';room.index=0;room.deadline=null;room.paused=false;room.pausedAt=null;room.pausedBy=null;
-   room.battle=null;room.compat=null;room.story=null;room.race=null;room.mini=null;room.arcade=null;room.party=null;room.votes={};
+   room.battle=null;room.compat=null;room.story=null;room.race=null;room.mini=null;room.arcade=null;room.party=null;room.drawGame=null;room.votes={};
    room.players.forEach(p=>{p.answer=null;p.ready=false;p.score=0;});
    broadcast(room);
   }
@@ -369,7 +384,7 @@ io.on('connection',socket=>{
 function raceAction(socket,ack,fn){const {room,player}=current(socket);if(!room||!player||room.paused||room.mode!=='race'||!room.race||room.phase!=='playing')return ackError(ack,'Race unavailable.');const error=fn({room,player});if(error)return ackError(ack,error);room.updated=Date.now();broadcast(room);ackOK(ack,{});}
 function battleAction(socket,ack,fn){const {room,player}=current(socket);if(!room||!player||room.paused||room.mode!=='sipbattle'||!room.battle||!['playing','finished'].includes(room.phase))return ackError(ack,'Battle unavailable.');try{const error=fn({room,player});if(error)return ackError(ack,error);room.updated=Date.now();broadcast(room);ackOK(ack,{});}catch(e){console.error('Battle action error:',e);ackError(ack,'Move failed.');}}
 function current(socket){const room=rooms.get(socket.data?.code);return {room,player:room&&findPlayer(room,socket.data.token)};}
-setInterval(()=>{for(const room of rooms.values()){if(room.mode==='party'&&!room.paused&&room.phase==='playing'&&party.tick(room.party,room.players)){room.updated=Date.now();broadcast(room);}if(room.mode==='party'&&!room.paused&&room.phase==='playing'&&room.party?.stage==='playing'&&party.current(room.party)?.type==='tap'&&Date.now()>room.party.goAt+4500){party.finish(room.party,room.players);room.updated=Date.now();broadcast(room);}if(room.arcade&&!room.paused&&room.phase==='playing'){if(arcade.tick(room.arcade)){if(room.arcade.stage==='finished')room.phase='finished';room.updated=Date.now();broadcast(room);}}if(room.mini&&!room.paused&&room.phase==='playing'){if(mini.tick(room.mini)){if(room.mini.stage==='finished')room.phase='finished';room.updated=Date.now();broadcast(room);}}if(room.mode==='race'&&!room.paused&&room.race&&room.phase==='playing'){kart.advance(room.race);if(room.race.stage==='finished')room.phase='finished';if(['countdown','racing','finished'].includes(room.race.stage))broadcast(room);}}},100).unref();
+setInterval(()=>{for(const room of rooms.values()){if(room.mode==='quickdraw'&&!room.paused&&room.phase==='playing'&&room.drawGame&&party.tick(room.drawGame,room.players)){if(room.drawGame.stage==='reveal')room.phase='finished';room.updated=Date.now();broadcast(room);}if(room.mode==='party'&&!room.paused&&room.phase==='playing'&&party.tick(room.party,room.players)){room.updated=Date.now();broadcast(room);}if(room.mode==='party'&&!room.paused&&room.phase==='playing'&&room.party?.stage==='playing'&&party.current(room.party)?.type==='tap'&&Date.now()>room.party.goAt+4500){party.finish(room.party,room.players);room.updated=Date.now();broadcast(room);}if(room.arcade&&!room.paused&&room.phase==='playing'){if(arcade.tick(room.arcade)){if(room.arcade.stage==='finished')room.phase='finished';room.updated=Date.now();broadcast(room);}}if(room.mini&&!room.paused&&room.phase==='playing'){if(mini.tick(room.mini)){if(room.mini.stage==='finished')room.phase='finished';room.updated=Date.now();broadcast(room);}}if(room.mode==='race'&&!room.paused&&room.race&&room.phase==='playing'){kart.advance(room.race);if(room.race.stage==='finished')room.phase='finished';if(['countdown','racing','finished'].includes(room.race.stage))broadcast(room);}}},100).unref();
 setInterval(()=>{const cutoff=Date.now()-1000*60*60*6;for(const [key,room] of rooms)if(room.updated<cutoff){clearTimeout(room.timer);rooms.delete(key)};},60000).unref();
 const port=process.env.PORT||3000;
 if(require.main===module)server.listen(port,()=>console.log(`Sip Happens listening on http://localhost:${port}`));

@@ -14,6 +14,7 @@ function resumeRoom(room,now=Date.now()){
  if(room.arcade?.deadline)room.arcade.deadline+=elapsed;
  if(room.arcade?.targetAt)room.arcade.targetAt+=elapsed;
  if(room.party?.draw?.deadline)room.party.draw.deadline+=elapsed;
+ if(room.drawGame?.draw?.deadline)room.drawGame.draw.deadline+=elapsed;
  if(room.party?.kart){room.party.kart.endAt+=elapsed;room.party.kart.spawnAt+=elapsed;room.party.kart.lastTick=now;}
  if(room.party?.goAt)room.party.goAt+=elapsed;
  if(room.race){
