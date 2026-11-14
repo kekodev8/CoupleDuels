@@ -12,7 +12,7 @@ const POOLS={
  emojirush:[['Guess the movie: 🦁👑',['The Lion King','Frozen','Shrek','Finding Nemo'],0,'quiz'],['Guess the film: ❄️👑⛄',['Moana','Frozen','Coco','Up'],1,'quiz'],['Guess the film: 🐠🔎',['Finding Nemo','Toy Story','Ratatouille','Cars'],0,'quiz']],
  tapduel:[['TAP DUEL: Be the first to tap when GO appears!',['TAP'],null,'tap']],
  distorted:[['MYSTERY GUESS: A yellow square lives in a pineapple under the sea.',['SpongeBob','Gumball','Jake','Pikachu'],0,'quiz'],['MYSTERY GUESS: A boy wears a magical watch with alien transformations.',['Ben 10','Finn','Dexter','Steven'],0,'quiz']],
- quickdraw:[['QUICK DRAW — 4 sketch-and-guess turns: 10, 8, 6 and 4 seconds!',[],null,'draw']],
+ quickdraw:[['QUICK DRAW — 4 sketch-and-guess turns: 15, 11, 7 and 4 seconds!',[],null,'draw']],
  memory:[['MEMORY HEIST: Remember: 🍕 🎮 🐱 🚗. Which was third?',['Pizza','Controller','Cat','Car'],2,'quiz'],['MEMORY HEIST: Remember: 🔑 🦋 🎲 🎸. Which came first?',['Guitar','Key','Butterfly','Dice'],1,'quiz']],
 };
 function shuffle(a,random=Math.random){for(let i=a.length-1;i>0;i--){const j=Math.floor(random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
@@ -22,8 +22,8 @@ function begin(p,players=[],now=Date.now()){p.stage='playing';p.answers={};p.rea
  if(r?.type==='draw')startDraw(p,players,now);
  if(r?.type==='kart')p.kart={endAt:now+15000,lastTick:now,spawnAt:now+900,seq:0,hazards:[],cars:Object.fromEntries(players.map(x=>[x.id,{lane:1,hits:0,stars:0}])),awarded:{}};
 }
-function startDraw(p,players,now=Date.now(),heat=0,totals=null){const drawer=players[(p.index+heat)%players.length];p.draw={heat,phase:'draw',drawerId:drawer?.id||null,word:DRAW_WORDS[(p.index*11+heat*13+Math.floor(now/100000))%DRAW_WORDS.length],deadline:now+[10000,8000,6000,4000][heat],strokes:[],totals:totals||Object.fromEntries(players.map(x=>[x.id,0])),correct:false,lastStrokeAt:0};}
-function publicState(p,players,viewerId=null){if(!p)return null;const r=current(p),d=p.draw,k=p.kart;return {index:p.index,total:16,stage:p.stage,round:r?{mode:r.mode,prompt:r.prompt,choices:r.choices,type:r.type}:null,goAt:p.goAt,results:p.results,challenge:p.challenge||'',outcome:p.outcome||'',draw:d?{heat:d.heat,phase:d.phase,drawerId:d.drawerId,word:(viewerId===d.drawerId||d.phase==='review')?d.word:null,deadline:d.deadline,strokes:d.strokes,correct:d.correct,totals:d.totals}:null,kart:k?{endAt:k.endAt,hazards:k.hazards,cars:k.cars}:null,players:players.map(x=>({id:x.id,name:x.name,score:x.score,answered:Object.hasOwn(p.answers,x.id),ready:!!p.ready[x.id]}))};}
+function startDraw(p,players,now=Date.now(),heat=0,totals=null){const drawer=players[(p.index+heat)%players.length];p.draw={heat,phase:'draw',drawerId:drawer?.id||null,word:DRAW_WORDS[(p.index*11+heat*13+Math.floor(now/100000))%DRAW_WORDS.length],deadline:now+[15000,11000,7000,4000][heat],strokes:[],totals:totals||Object.fromEntries(players.map(x=>[x.id,0])),correct:false,lastStrokeAt:0,inkMax:3.2,inkRemaining:3.2};}
+function publicState(p,players,viewerId=null){if(!p)return null;const r=current(p),d=p.draw,k=p.kart;return {index:p.index,total:16,stage:p.stage,round:r?{mode:r.mode,prompt:r.prompt,choices:r.choices,type:r.type}:null,goAt:p.goAt,results:p.results,challenge:p.challenge||'',outcome:p.outcome||'',draw:d?{heat:d.heat,phase:d.phase,drawerId:d.drawerId,word:(viewerId===d.drawerId||d.phase==='review')?d.word:null,deadline:d.deadline,strokes:d.strokes,inkRemaining:d.inkRemaining,inkMax:d.inkMax,correct:d.correct,totals:d.totals}:null,kart:k?{endAt:k.endAt,hazards:k.hazards,cars:k.cars}:null,players:players.map(x=>({id:x.id,name:x.name,score:x.score,answered:Object.hasOwn(p.answers,x.id),ready:!!p.ready[x.id]}))};}
 function submit(p,players,id,answer,now=Date.now()){const r=current(p);if(!r||p.stage!=='playing')return 'Round is not accepting answers.';if(r.type==='draw'||r.type==='kart')return 'Use this mini-game’s controls.';if(Object.hasOwn(p.answers,id))return 'Already answered.';if(!players.some(x=>x.id===id))return 'Unknown player.';
  if(r.type==='tap'){if(answer!=='tap')return 'Invalid tap.';p.answers[id]=now<p.goAt?'false-start':now;}
  else if(['quiz','match','rps'].includes(r.type)){if(!Number.isInteger(answer)||answer<0||answer>=r.choices.length)return 'Invalid answer.';p.answers[id]=answer;}
@@ -38,9 +38,25 @@ function finish(p,players){if(p.stage!=='playing')return;p.stage='reveal';const 
  else if(r.type==='kart'){const cars=p.kart.cars;for(const x of players){const c=cars[x.id];awarded[x.id]=Math.max(0,2+c.stars*2-c.hits);}}
  for(const x of players)x.score+=awarded[x.id];p.results={awarded,answers:players.map(x=>({id:x.id,answer:p.answers[x.id]??null})),correct:r.type==='quiz'?r.correct:null};}
 function ready(p,players,id){if(p.stage!=='reveal')return 'Not at the results screen.';if(!players.some(x=>x.id===id))return 'Unknown player.';p.ready[id]=true;if(players.every(x=>p.ready[x.id])){p.index++;if(p.index>=16)p.stage='finished';else begin(p,players);}return null;}
-function drawStroke(p,players,id,points,now=Date.now()){const d=p.draw;if(!d||current(p)?.type!=='draw'||p.stage!=='playing'||d.phase!=='draw'||d.drawerId!==id||now>d.deadline)return 'Drawing unavailable.';
+function inkCost(a,b){return Math.hypot(a[0]-b[0],a[1]-b[1]);}
+function inkUsed(strokes){let used=0,prev=null;for(const pt of strokes){if(pt[2]===1){prev=pt;continue;}if(prev)used+=inkCost(prev,pt);prev=pt;}return used;}
+function drawStroke(p,players,id,points,now=Date.now()){
+ const d=p.draw;if(!d||current(p)?.type!=='draw'||p.stage!=='playing'||d.phase!=='draw'||d.drawerId!==id||now>d.deadline)return 'Drawing unavailable.';
  if(!Array.isArray(points)||points.length<1||points.length>24||d.strokes.length>=1200)return 'Invalid stroke.';
- const clean=[];for(const point of points){if(!Array.isArray(point)||point.length!==3||!point.every(n=>typeof n==='number'&&Number.isFinite(n))||point[0]<0||point[0]>1||point[1]<0||point[1]>1||![0,1].includes(point[2]))return 'Invalid stroke.';clean.push(point.map((n,i)=>i<2?Math.round(n*1000)/1000:n));}d.strokes.push(...clean);return null;}
+ const clean=[];for(const point of points){if(!Array.isArray(point)||point.length!==3||!point.every(n=>typeof n==='number'&&Number.isFinite(n))||point[0]<0||point[0]>1||point[1]<0||point[1]>1||![0,1].includes(point[2]))return 'Invalid stroke.';clean.push(point.map((n,i)=>i<2?Math.round(n*1000)/1000:n));}
+ const accepted=[];for(const pt of clean){if(pt[2]===1){if(d.inkRemaining<=0)break;accepted.push(pt);continue;}
+   const prev=accepted.at(-1)||d.strokes.at(-1);if(!prev)continue;
+   const cost=inkCost(prev,pt);if(cost>d.inkRemaining+0.000001){if(d.inkRemaining>0.002){const t=d.inkRemaining/cost;accepted.push([Math.round((prev[0]+(pt[0]-prev[0])*t)*1000)/1000,Math.round((prev[1]+(pt[1]-prev[1])*t)*1000)/1000,0]);}d.inkRemaining=0;break;}
+   accepted.push(pt);d.inkRemaining=Math.max(0,d.inkRemaining-cost);
+ }
+ d.lastAccepted=accepted;d.strokes.push(...accepted);if(accepted.length===0)return 'Ink is empty. Undo a stroke to recover some ink.';
+ return null;
+}
+function drawUndo(p,players,id,now=Date.now()){
+ const d=p.draw;if(!d||current(p)?.type!=='draw'||p.stage!=='playing'||d.phase!=='draw'||d.drawerId!==id||now>d.deadline)return 'Undo unavailable.';
+ const lastStart=d.strokes.findLastIndex(pt=>pt[2]===1);if(lastStart<0)return 'Nothing to undo.';
+ d.strokes.splice(lastStart);d.inkRemaining=Math.max(0,+(d.inkMax-inkUsed(d.strokes)).toFixed(4));return null;
+}
 function guess(p,players,id,word,now=Date.now()){const d=p.draw;if(!d||current(p)?.type!=='draw'||d.phase!=='guess'||p.stage!=='playing'||id===d.drawerId)return 'Guess unavailable.';
  if(!players.some(x=>x.id===id))return 'Unknown player.';
  if(now>d.deadline)return 'Time expired.';
@@ -62,4 +78,4 @@ function tick(p,players,now=Date.now()){
   if(now>=k.spawnAt){k.seq++;const lane=(k.seq*7+Math.floor(p.index*3))%3;k.hazards.push({id:k.seq,lane,y:-.1,type:k.seq%4===0?'star':'cone',done:false});k.spawnAt=now+920;}
   return true;}
  return false;}
-module.exports={MODES,DRAW_WORDS,POOLS,make,current,publicState,begin,submit,finish,ready,drawStroke,guess,lane,tick,startDraw};
+module.exports={MODES,DRAW_WORDS,POOLS,make,current,publicState,begin,submit,finish,ready,drawStroke,drawUndo,guess,lane,tick,startDraw};

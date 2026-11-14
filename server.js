@@ -251,7 +251,13 @@ io.on('connection',socket=>{
   const {room,player}=current(socket);
   if(!room||!player||room.mode!=='quickdraw'||!room.drawGame||room.phase!=='playing'||room.paused)return ackError(ack,'Drawing is unavailable.');
   const err=party.drawStroke(room.drawGame,room.players,player.id,points);if(err)return ackError(ack,err);
-  for(const peer of room.players)if(peer.socketId)io.to(peer.socketId).emit('quickdraw:stroke',{points,drawerId:player.id});
+  for(const peer of room.players)if(peer.socketId)io.to(peer.socketId).emit('quickdraw:stroke',{points:room.drawGame.draw.lastAccepted,drawerId:player.id,inkRemaining:room.drawGame.draw.inkRemaining});
+  ackOK(ack,{});
+ });
+ socket.on('quickdraw:undo',(_,ack)=>{
+  const {room,player}=current(socket);if(!room||!player||room.mode!=='quickdraw'||!room.drawGame||room.phase!=='playing'||room.paused)return ackError(ack,'Undo unavailable.');
+  const err=party.drawUndo(room.drawGame,room.players,player.id);if(err)return ackError(ack,err);
+  for(const peer of room.players)if(peer.socketId)io.to(peer.socketId).emit('quickdraw:undo',{strokes:room.drawGame.draw.strokes,inkRemaining:room.drawGame.draw.inkRemaining});
   ackOK(ack,{});
  });
  socket.on('quickdraw:guess',({word}={},ack)=>{
@@ -264,7 +270,13 @@ io.on('connection',socket=>{
   const {room,player}=current(socket);if(!room||!player||room.mode!=='party'||room.phase!=='playing'||room.paused)return ackError(ack,'Party unavailable.');
   const err=party.drawStroke(room.party,room.players,player.id,points);if(err)return ackError(ack,err);
   // Broadcast strokes separately: repaint the existing canvas, not the entire webpage.
-  for(const peer of room.players)if(peer.socketId)io.to(peer.socketId).emit('party:stroke',{points,drawerId:player.id});
+  for(const peer of room.players)if(peer.socketId)io.to(peer.socketId).emit('party:stroke',{points:room.party.draw.lastAccepted,drawerId:player.id,inkRemaining:room.party.draw.inkRemaining});
+  ackOK(ack,{});
+ });
+ socket.on('party:undo',(_,ack)=>{
+  const {room,player}=current(socket);if(!room||!player||room.mode!=='party'||room.phase!=='playing'||room.paused)return ackError(ack,'Undo unavailable.');
+  const err=party.drawUndo(room.party,room.players,player.id);if(err)return ackError(ack,err);
+  for(const peer of room.players)if(peer.socketId)io.to(peer.socketId).emit('party:undo',{strokes:room.party.draw.strokes,inkRemaining:room.party.draw.inkRemaining});
   ackOK(ack,{});
  });
  socket.on('party:guess',({word}={},ack)=>{
