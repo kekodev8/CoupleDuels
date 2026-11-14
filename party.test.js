@@ -1,0 +1,5 @@
+'use strict';const t=require('node:test'),assert=require('node:assert/strict'),party=require('./party');
+const players=()=>[{id:'a',name:'A',score:0},{id:'b',name:'B',score:0}];
+t('16 rounds include all eleven game themes',()=>{const p=party.make(()=>0.55);assert.equal(p.rounds.length,16);assert.deepEqual(new Set(p.rounds.map(x=>x.mode)),new Set(party.MODES));});
+t('non-reaction answers require both and score once',()=>{const p=party.make(()=>.3),ps=players();p.rounds[0]={mode:'emojirush',prompt:'x',choices:['a','b'],correct:1,type:'quiz'};assert.equal(party.submit(p,ps,'a',1),null);assert.equal(p.stage,'playing');assert.equal(party.submit(p,ps,'b',0),null);assert.equal(p.stage,'reveal');assert.equal(ps[0].score,2);assert.ok(party.submit(p,ps,'a',1));assert.equal(ps[0].score,2);});
+t('players progress together through 16 rounds',()=>{const p=party.make(()=>.4),ps=players();for(let i=0;i<16;i++){if(p.rounds[i].type==='tap'){p.goAt=0;party.submit(p,ps,'a','tap');}else{party.submit(p,ps,'a',0);party.submit(p,ps,'b',0);}assert.equal(p.stage,'reveal');party.ready(p,ps,'a');assert.equal(p.stage,'reveal');party.ready(p,ps,'b');}assert.equal(p.stage,'finished');});
