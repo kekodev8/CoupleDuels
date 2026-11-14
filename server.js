@@ -75,7 +75,7 @@ function snapshot(room,token){
    breakdown:room.compat.guessIndices.map((qi,order)=>({question:room.compat.questions[qi].title,
     choices:room.compat.questions[qi].choices,players:room.players.map(p=>({id:p.id,name:p.name,selfAnswer:room.compat.selfAnswers[p.id][qi],guess:room.compat.guessAnswers[p.id][order],partnerAnswer:room.compat.selfAnswers[room.players.find(other=>other.id!==p.id).id][qi]}))}))};
  }
- return {party:room.mode==='party'?party.publicState(room.party,room.players):null,votes:room.votes||{},arcade:room.arcade?arcade.publicState(room.arcade):null,mini:room.mini?mini.publicMini(room.mini):null,race:room.mode==='race'&&room.race?kart.publicRace(room.race):null,story:room.mode==='story'&&room.story?storyEngine.publicStory(room.story,room.players):null,battle:room.mode==='sipbattle'&&room.battle?battle.publicBattle(room.battle,room.players):null,code:room.code,mode:room.mode,phase:room.phase,paused:!!room.paused,pausedBy:room.pausedBy||null,players:room.players.map(p=>({id:p.id,name:p.name,connected:!!p.socketId,score:p.score,ready:!!p.ready,avatar:p.avatar||'m1',color:Number.isInteger(p.color)?p.color:0,mood:p.mood||'Chill',drinks:p.drinks||0,wins:p.wins||0,vote:(room.votes||{})[p.id]||null,answered:isActive?!!(p.answer!==null):undefined})),youId:you?.id,hostId:room.players[0]?.id,roundIndex:room.index,deadline:room.deadline||null,round,reveal,summary};
+ return {party:room.mode==='party'?party.publicState(room.party,room.players,you?.id):null,votes:room.votes||{},arcade:room.arcade?arcade.publicState(room.arcade):null,mini:room.mini?mini.publicMini(room.mini):null,race:room.mode==='race'&&room.race?kart.publicRace(room.race):null,story:room.mode==='story'&&room.story?storyEngine.publicStory(room.story,room.players):null,battle:room.mode==='sipbattle'&&room.battle?battle.publicBattle(room.battle,room.players):null,code:room.code,mode:room.mode,phase:room.phase,paused:!!room.paused,pausedBy:room.pausedBy||null,players:room.players.map(p=>({id:p.id,name:p.name,connected:!!p.socketId,score:p.score,ready:!!p.ready,avatar:p.avatar||'m1',color:Number.isInteger(p.color)?p.color:0,mood:p.mood||'Chill',drinks:p.drinks||0,wins:p.wins||0,vote:(room.votes||{})[p.id]||null,answered:isActive?!!(p.answer!==null):undefined})),youId:you?.id,hostId:room.players[0]?.id,roundIndex:room.index,deadline:room.deadline||null,round,reveal,summary};
 }
 function transition(room){
  if(room.paused)return;
@@ -198,6 +198,7 @@ io.on('connection',socket=>{
   if(room.players.length!==2||!room.players.every(p=>room.votes?.[p.id]===room.mode))return ackError(ack,'Both players must vote for the same game.');
   room.index=0;room.phase='playing';room.winsRecorded=false;room.paused=false;room.pausedAt=null;room.pausedBy=null;
   room.party=room.mode==='party'?party.make():null;
+  if(room.party)party.begin(room.party,room.players);
   room.battle=room.mode==='sipbattle'?battle.makeBattle(room.players):null;
   room.story=room.mode==='story'?storyEngine.makeStory():null;
   room.race=room.mode==='race'?kart.createRace(room.players):null;
@@ -243,6 +244,23 @@ io.on('connection',socket=>{
   const ranking=room.players.slice().sort((a,b)=>b.score-a.score);if(ranking[0].score===ranking[1].score||ranking[1].id!==player.id)return ackError(ack,'Only the other player chooses.');
   if(!['drink','challenge','skip'].includes(choice))return ackError(ack,'Unknown choice.');
   room.party.outcome=choice;room.updated=Date.now();broadcast(room);ackOK(ack,{});
+ });
+ socket.on('party:stroke',({points}={},ack)=>{
+  const {room,player}=current(socket);if(!room||!player||room.mode!=='party'||room.phase!=='playing'||room.paused)return ackError(ack,'Party unavailable.');
+  const err=party.drawStroke(room.party,room.players,player.id,points);if(err)return ackError(ack,err);
+  // Broadcast strokes separately: repaint the existing canvas, not the entire webpage.
+  for(const peer of room.players)if(peer.socketId)io.to(peer.socketId).emit('party:stroke',{points,drawerId:player.id});
+  ackOK(ack,{});
+ });
+ socket.on('party:guess',({word}={},ack)=>{
+  const {room,player}=current(socket);if(!room||!player||room.mode!=='party'||room.phase!=='playing'||room.paused)return ackError(ack,'Party unavailable.');
+  const err=party.guess(room.party,room.players,player.id,word);if(err)return ackError(ack,err);
+  room.updated=Date.now();broadcast(room);ackOK(ack,{});
+ });
+ socket.on('party:lane',({step}={},ack)=>{
+  const {room,player}=current(socket);if(!room||!player||room.mode!=='party'||room.phase!=='playing'||room.paused)return ackError(ack,'Party unavailable.');
+  const err=party.lane(room.party,room.players,player.id,step);if(err)return ackError(ack,err);
+  room.updated=Date.now();broadcast(room);ackOK(ack,{});
  });
  socket.on('party:answer',({answer}={},ack)=>{
   const {room,player}=current(socket);if(!room||!player||room.mode!=='party'||room.phase!=='playing'||room.paused)return ackError(ack,'Party Mode unavailable.');
@@ -351,7 +369,7 @@ io.on('connection',socket=>{
 function raceAction(socket,ack,fn){const {room,player}=current(socket);if(!room||!player||room.paused||room.mode!=='race'||!room.race||room.phase!=='playing')return ackError(ack,'Race unavailable.');const error=fn({room,player});if(error)return ackError(ack,error);room.updated=Date.now();broadcast(room);ackOK(ack,{});}
 function battleAction(socket,ack,fn){const {room,player}=current(socket);if(!room||!player||room.paused||room.mode!=='sipbattle'||!room.battle||!['playing','finished'].includes(room.phase))return ackError(ack,'Battle unavailable.');try{const error=fn({room,player});if(error)return ackError(ack,error);room.updated=Date.now();broadcast(room);ackOK(ack,{});}catch(e){console.error('Battle action error:',e);ackError(ack,'Move failed.');}}
 function current(socket){const room=rooms.get(socket.data?.code);return {room,player:room&&findPlayer(room,socket.data.token)};}
-setInterval(()=>{for(const room of rooms.values()){if(room.mode==='party'&&!room.paused&&room.phase==='playing'&&room.party?.stage==='playing'&&party.current(room.party)?.type==='tap'&&Date.now()>room.party.goAt+4500){party.finish(room.party,room.players);room.updated=Date.now();broadcast(room);}if(room.arcade&&!room.paused&&room.phase==='playing'){if(arcade.tick(room.arcade)){if(room.arcade.stage==='finished')room.phase='finished';room.updated=Date.now();broadcast(room);}}if(room.mini&&!room.paused&&room.phase==='playing'){if(mini.tick(room.mini)){if(room.mini.stage==='finished')room.phase='finished';room.updated=Date.now();broadcast(room);}}if(room.mode==='race'&&!room.paused&&room.race&&room.phase==='playing'){kart.advance(room.race);if(room.race.stage==='finished')room.phase='finished';if(['countdown','racing','finished'].includes(room.race.stage))broadcast(room);}}},100).unref();
+setInterval(()=>{for(const room of rooms.values()){if(room.mode==='party'&&!room.paused&&room.phase==='playing'&&party.tick(room.party,room.players)){room.updated=Date.now();broadcast(room);}if(room.mode==='party'&&!room.paused&&room.phase==='playing'&&room.party?.stage==='playing'&&party.current(room.party)?.type==='tap'&&Date.now()>room.party.goAt+4500){party.finish(room.party,room.players);room.updated=Date.now();broadcast(room);}if(room.arcade&&!room.paused&&room.phase==='playing'){if(arcade.tick(room.arcade)){if(room.arcade.stage==='finished')room.phase='finished';room.updated=Date.now();broadcast(room);}}if(room.mini&&!room.paused&&room.phase==='playing'){if(mini.tick(room.mini)){if(room.mini.stage==='finished')room.phase='finished';room.updated=Date.now();broadcast(room);}}if(room.mode==='race'&&!room.paused&&room.race&&room.phase==='playing'){kart.advance(room.race);if(room.race.stage==='finished')room.phase='finished';if(['countdown','racing','finished'].includes(room.race.stage))broadcast(room);}}},100).unref();
 setInterval(()=>{const cutoff=Date.now()-1000*60*60*6;for(const [key,room] of rooms)if(room.updated<cutoff){clearTimeout(room.timer);rooms.delete(key)};},60000).unref();
 const port=process.env.PORT||3000;
 if(require.main===module)server.listen(port,()=>console.log(`Sip Happens listening on http://localhost:${port}`));

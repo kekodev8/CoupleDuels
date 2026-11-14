@@ -18,9 +18,12 @@ test('two real room participants can vote, ready up, complete 16 Party rounds, a
   assert.equal((await b.send('vote',{mode:'party'})).ok,true);
   assert.equal((await a.send('lobby:ready')).ok,true);assert.equal((await b.send('lobby:ready')).ok,true);
   assert.equal((await a.send('start')).ok,true);assert.equal(room.mode,'party');assert.equal(room.party.rounds.length,16);
+  const partyTick=(p,room)=>{const party=require('./party');party.tick(p,room.players,p.draw.deadline+1);party.tick(p,room.players,p.draw.deadline+1);party.tick(p,room.players,p.draw.deadline+1);};
   for(let i=0;i<16;i++){
    const p=room.party,r=p.rounds[i];
    if(r.type==='tap'){p.goAt=0;assert.equal((await a.send('party:answer',{answer:'tap'})).ok,true);}
+   else if(r.type==='draw'){for(let heat=0;heat<4;heat++){const artist=p.draw.drawerId===room.players[0].id?a:b;assert.equal((await artist.send('party:stroke',{points:[[.1,.2,1],[.4,.5,0]]})).ok,true);partyTick(p,room);}}
+   else if(r.type==='kart'){assert.equal((await a.send('party:lane',{step:-1})).ok,true);assert.equal(p.kart.cars[room.players[0].id].lane,0);require('./party').tick(p,room.players,p.kart.endAt+1);}
    else{assert.equal((await a.send('party:answer',{answer:0})).ok,true);assert.equal((await b.send('party:answer',{answer:0})).ok,true);}
    assert.equal(p.stage,'reveal');
    assert.equal((await a.send('party:ready')).ok,true);assert.equal((await b.send('party:ready')).ok,true);
